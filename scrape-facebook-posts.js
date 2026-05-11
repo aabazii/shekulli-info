@@ -16,8 +16,9 @@ const path = require('path');
 
 const FB_PAGE = 'https://www.facebook.com/shekulliinfo';
 const OUTPUT_FILE = path.join(__dirname, 'scraped_posts.json');
-const SCROLL_DELAY = 2000; // 2 seconds between scrolls
-const MAX_SCROLLS = 100; // Max number of scroll attempts
+const SCROLL_DELAY = 3000; // 3 seconds between scrolls (Facebook needs time to load)
+const MAX_SCROLLS = 300; // More scrolls to get all posts
+const LOAD_TIMEOUT = 5000; // Wait up to 5 seconds for content to load
 
 async function scrapeFacebookPosts() {
   let browser;
@@ -65,7 +66,7 @@ async function scrapeFacebookPosts() {
     console.log('📜 Scrolling to load all posts...\n');
 
     // Auto-scroll to load more posts
-    let previousHeight = 0;
+    let previousPostCount = 0;
     let scrolls = 0;
     let noNewPostsCount = 0;
 
@@ -77,28 +78,33 @@ async function scrapeFacebookPosts() {
 
       process.stdout.write(`\r  Scroll ${scrolls + 1}/${MAX_SCROLLS} | Posts found: ${postCount}`);
 
-      // Scroll down
+      // Scroll down aggressively (multiple times)
       await page.evaluate(() => {
-        window.scrollBy(0, window.innerHeight);
+        for (let i = 0; i < 3; i++) {
+          window.scrollBy(0, window.innerHeight);
+        }
       });
 
-      // Wait for potential new content to load
+      // Wait longer for Facebook to load more posts
       await new Promise(resolve => setTimeout(resolve, SCROLL_DELAY));
 
-      // Check if new content loaded
-      const newHeight = await page.evaluate(() => document.body.scrollHeight);
-      
-      if (newHeight === previousHeight) {
+      // Check if new posts loaded
+      const newPostCount = await page.evaluate(() => {
+        return document.querySelectorAll('[role="article"]').length;
+      });
+
+      if (newPostCount === previousPostCount) {
         noNewPostsCount++;
-        if (noNewPostsCount > 3) {
-          console.log('\n✅ Reached end of page (no new posts loading)\n');
+        // Be more persistent - don't give up after just 3 attempts
+        if (noNewPostsCount > 10) {
+          console.log('\n✅ Reached end of page (no new posts loading after 10 attempts)\n');
           break;
         }
       } else {
-        noNewPostsCount = 0;
+        noNewPostsCount = 0; // Reset if new posts found
       }
 
-      previousHeight = newHeight;
+      previousPostCount = newPostCount;
       scrolls++;
     }
 

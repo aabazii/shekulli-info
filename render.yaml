@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: shekulli-info
+    runtime: node
+    region: frankfurt
+    plan: free
+    rootDir: server
+    buildCommand: npm install
+    startCommand: node index.js
+    envVars:
+      - key: APIFY_API_TOKEN
+        sync: false

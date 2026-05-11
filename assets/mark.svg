@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" width="96" height="96" role="img" aria-label="Shekulli.info mark">
+  <circle cx="48" cy="48" r="46" fill="#0B1830"></circle>
+  <circle cx="48" cy="48" r="40" fill="none" stroke="#1456C7" stroke-width="1.5"></circle>
+  <text x="48" y="64" text-anchor="middle" font-family="&#39;Playfair Display&#39;, &#39;Times New Roman&#39;, serif" font-weight="900" font-size="58" fill="#FFFFFF">S</text>
+  <circle cx="74" cy="22" r="3.5" fill="#1456C7"></circle>
+</svg>

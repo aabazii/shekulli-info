@@ -1,0 +1,429 @@
+<!doctype html>
+<html lang="sq">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Redaksia — Shekulli.info</title>
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="colors_and_type.css">
+<style>
+  body { background: var(--paper-3); margin: 0; font-family: var(--font-sans); }
+
+  .admin-bar {
+    background: var(--paper-ink);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    height: 52px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .admin-bar__brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+    font-size: 15px;
+    color: #fff;
+    text-decoration: none;
+  }
+  .admin-bar__brand img { height: 32px; border-radius: 50%; }
+  .admin-bar__label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: #8089A0;
+    margin-left: 2px;
+  }
+  .admin-bar__actions { display: flex; gap: 8px; align-items: center; }
+
+  .admin-layout {
+    max-width: 1140px;
+    margin: 0 auto;
+    padding: 32px 24px 64px;
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 32px;
+  }
+
+  .panel {
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    padding: 28px;
+  }
+  .panel__title {
+    font-family: var(--font-sans);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--ink-3);
+    margin: 0 0 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .field { margin-bottom: 20px; }
+  .field label {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-3);
+    margin-bottom: 6px;
+  }
+  .field input, .field select, .field textarea {
+    font-family: var(--font-sans);
+    font-size: 14px;
+    padding: 10px 12px;
+    background: var(--paper);
+    border: 1px solid var(--rule-strong);
+    border-radius: 2px;
+    color: var(--ink-1);
+    width: 100%;
+    box-sizing: border-box;
+    transition: border-color 0.2s;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus {
+    outline: none;
+    border-color: var(--brand-red);
+  }
+  .field textarea { resize: vertical; line-height: 1.6; }
+
+  .title-field input {
+    font-family: var(--font-display);
+    font-size: 22px;
+    font-weight: 700;
+    padding: 12px;
+    border-width: 1px;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--font-sans);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 10px 18px;
+    border-radius: 2px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.12s;
+  }
+  .btn:active { transform: translateY(1px); }
+  .btn--primary { background: var(--brand-red); color: #fff; border-color: var(--brand-red); }
+  .btn--primary:hover { background: var(--brand-red-deep); }
+  .btn--ghost { background: transparent; color: var(--ink-1); border-color: var(--rule-strong); }
+  .btn--ghost:hover { background: var(--paper-3); }
+  .btn--danger { background: transparent; color: #c0392b; border-color: #e8b4b0; }
+  .btn--danger:hover { background: #fdf1f0; }
+  .btn--sm { padding: 6px 12px; font-size: 12px; }
+  .btn--full { width: 100%; justify-content: center; }
+
+  .photo-preview {
+    width: 100%;
+    aspect-ratio: 16/9;
+    background: var(--paper-3);
+    border: 1px dashed var(--rule-strong);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    color: var(--ink-3);
+    margin-bottom: 10px;
+    background-size: cover;
+    background-position: center;
+    position: relative;
+  }
+
+  .article-list { display: flex; flex-direction: column; gap: 0; }
+  .article-item {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 12px;
+    align-items: start;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--rule);
+  }
+  .article-item:last-child { border-bottom: 0; }
+  .article-item__cat {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--brand-red);
+    margin-bottom: 4px;
+  }
+  .article-item__title {
+    font-family: var(--font-display);
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1.25;
+    color: var(--ink-1);
+    margin: 0;
+    cursor: pointer;
+  }
+  .article-item__title:hover { color: var(--brand-red); }
+  .article-item__meta { font-size: 11px; color: var(--ink-3); margin-top: 4px; }
+  .article-item__actions { display: flex; gap: 4px; align-items: center; flex-shrink: 0; }
+
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--ink-1);
+    color: #fff;
+    padding: 12px 24px;
+    border-radius: 4px;
+    font-family: var(--font-sans);
+    font-size: 14px;
+    font-weight: 600;
+    transition: transform 0.3s cubic-bezier(0.2,0.7,0.2,1);
+    z-index: 999;
+    pointer-events: none;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  @media (max-width: 860px) {
+    .admin-layout { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="admin-bar">
+  <a href="/" class="admin-bar__brand">
+    <img src="assets/logo.png" alt="">
+    <span>Shekulli<span style="color:var(--brand-red)">.</span>info</span>
+    <span class="admin-bar__label">/ Redaksia</span>
+  </a>
+  <div class="admin-bar__actions">
+    <a href="/" class="btn btn--ghost btn--sm" style="color:#cfd5e2;border-color:#1F3260;">← Kthehu te faqja</a>
+    <button onclick="logout()" class="btn btn--ghost btn--sm" style="color:#8089A0;border-color:#1F3260;">Dilni</button>
+  </div>
+</div>
+
+<div class="admin-layout">
+
+  <!-- Editor panel -->
+  <div>
+    <div class="panel">
+      <p class="panel__title" id="editor-mode-label">Artikull i ri</p>
+      <input type="hidden" id="edit-id">
+
+      <div class="field title-field">
+        <label>Titulli</label>
+        <input type="text" id="f-title" placeholder="Shkruani titullin e artikullit këtu…">
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div class="field">
+          <label>Rubrika</label>
+          <select id="f-category">
+            <option value="Politikë">Politikë</option>
+            <option value="Kosovë">Kosovë</option>
+            <option value="Botë">Botë</option>
+            <option value="Ekonomi">Ekonomi</option>
+            <option value="Sport">Sport</option>
+            <option value="Kulturë">Kulturë</option>
+            <option value="Opinion">Opinion</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Autori</label>
+          <input type="text" id="f-author" placeholder="P.sh. A. Hoxha">
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Kicker / çmim (opsionale)</label>
+        <input type="text" id="f-kicker" placeholder="P.sh. POLITIKË · EKSKLUZIVE">
+      </div>
+
+      <div class="field">
+        <label>Hyrja (standfirst)</label>
+        <textarea id="f-standfirst" rows="3" placeholder="Paragraf i shkurtër hyrës që shfaqet si subtitle…"></textarea>
+      </div>
+
+      <div class="field">
+        <label>Teksti i artikullit</label>
+        <textarea id="f-body" rows="16" placeholder="Shkruani ose ngjisni tekstin e plotë. Ndani paragrafët me rresht bosh.&#10;&#10;Kuotat e gjata (brenda &quot;&quot;) do të formatohen automatikisht si pull-quote."></textarea>
+      </div>
+
+      <div style="display:flex;gap:12px;justify-content:flex-end;flex-wrap:wrap;">
+        <button class="btn btn--ghost" onclick="clearForm()">Pastro</button>
+        <button class="btn btn--primary" onclick="publish()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+          Publiko
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <div style="display:flex;flex-direction:column;gap:24px;">
+
+    <!-- Photo -->
+    <div class="panel">
+      <p class="panel__title">Foto kryesore</p>
+      <div class="photo-preview" id="photo-preview">
+        <span id="photo-placeholder-text">Nuk ka foto</span>
+      </div>
+      <div class="field" style="margin-bottom:0;">
+        <label>URL e fotos</label>
+        <input type="url" id="f-photo" placeholder="https://images.unsplash.com/…" oninput="updatePhotoPreview(this.value)">
+      </div>
+      <p style="font-size:11px;color:var(--ink-3);margin:8px 0 0;">Unsplash: images.unsplash.com/photo-XXX?w=1400&q=70</p>
+    </div>
+
+    <!-- Published articles -->
+    <div class="panel">
+      <p class="panel__title">Artikujt e publikuar (<span id="count">0</span>)</p>
+      <div class="article-list" id="article-list"></div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="articles.js"></script>
+<script>
+/* Auth gate — redirect to login if not authenticated */
+const SESSION_KEY = 'shekulli_admin_session';
+if (sessionStorage.getItem(SESSION_KEY) !== '1') {
+  location.replace('login?next=admin');
+}
+
+function logout() {
+  sessionStorage.removeItem(SESSION_KEY);
+  location.replace('login');
+}
+
+// Use window.ShekullDB directly so references are always live
+function db() { return window.ShekullDB; }
+
+function toast(msg, duration = 2800) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), duration);
+}
+
+function updatePhotoPreview(url) {
+  const p = document.getElementById('photo-preview');
+  const txt = document.getElementById('photo-placeholder-text');
+  if (url) {
+    p.style.backgroundImage = "url('" + url + "')";
+    txt.style.display = 'none';
+  } else {
+    p.style.backgroundImage = '';
+    txt.style.display = '';
+  }
+}
+
+function clearForm() {
+  document.getElementById('edit-id').value = '';
+  document.getElementById('f-title').value = '';
+  document.getElementById('f-standfirst').value = '';
+  document.getElementById('f-body').value = '';
+  document.getElementById('f-author').value = '';
+  document.getElementById('f-kicker').value = '';
+  document.getElementById('f-photo').value = '';
+  document.getElementById('f-category').value = 'Politikë';
+  updatePhotoPreview('');
+  document.getElementById('editor-mode-label').textContent = 'Artikull i ri';
+}
+
+function publish() {
+  const title = document.getElementById('f-title').value.trim();
+  const body = document.getElementById('f-body').value.trim();
+  if (!title) { toast('⚠ Titulli është i detyrueshëm.'); return; }
+  if (!body) { toast('⚠ Teksti nuk mund të jetë bosh.'); return; }
+
+  const id = document.getElementById('edit-id').value || Date.now();
+  const article = {
+    id: Number(id),
+    title,
+    category: document.getElementById('f-category').value,
+    kicker: document.getElementById('f-kicker').value.trim() || document.getElementById('f-category').value.toUpperCase(),
+    standfirst: document.getElementById('f-standfirst').value.trim(),
+    body,
+    author: document.getElementById('f-author').value.trim() || 'Redaksia',
+    photo: document.getElementById('f-photo').value.trim(),
+    published: Number(id) || Date.now()
+  };
+
+  db().saveArticle(article);
+  toast('✓ Artikulli u publikua!');
+  clearForm();
+  renderList();
+}
+
+function editArticle(id) {
+  const a = db().getArticles().find(x => String(x.id) === String(id));
+  if (!a) return;
+  document.getElementById('edit-id').value = a.id;
+  document.getElementById('f-title').value = a.title;
+  document.getElementById('f-standfirst').value = a.standfirst || '';
+  document.getElementById('f-body').value = a.body || '';
+  document.getElementById('f-author').value = a.author || '';
+  document.getElementById('f-kicker').value = a.kicker || '';
+  document.getElementById('f-photo').value = a.photo || '';
+  document.getElementById('f-category').value = a.category;
+  updatePhotoPreview(a.photo);
+  document.getElementById('editor-mode-label').textContent = 'Redakto artikullin';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function removeArticle(id) {
+  if (!confirm('Jeni i sigurt? Ky veprim nuk mund të kthehet prapa.')) return;
+  db().deleteArticle(id);
+  renderList();
+  toast('Artikulli u fshi.');
+}
+
+function renderList() {
+  const { getArticles, timeAgo } = db();
+  const articles = getArticles();
+  document.getElementById('count').textContent = articles.length;
+  const list = document.getElementById('article-list');
+  list.innerHTML = '';
+  if (articles.length === 0) {
+    list.innerHTML = '<p style="font-size:13px;color:var(--ink-3);padding:12px 0;">Asnjë artikull i gjetur.</p>';
+    return;
+  }
+  articles.forEach(a => {
+    const row = document.createElement('div');
+    row.className = 'article-item';
+    row.innerHTML = `
+      <div>
+        <div class="article-item__cat">${a.category}</div>
+        <p class="article-item__title" onclick="editArticle(${a.id})">${a.title}</p>
+        <div class="article-item__meta">${a.author} · ${timeAgo(a.published)}</div>
+      </div>
+      <div class="article-item__actions">
+        <a href="article?id=${a.id}" target="_blank" class="btn btn--ghost btn--sm" title="Shiko">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        </a>
+        <button class="btn btn--ghost btn--sm" onclick="editArticle(${a.id})" title="Redakto">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </button>
+        <button class="btn btn--danger btn--sm" onclick="removeArticle(${a.id})" title="Fshi">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+        </button>
+      </div>`;
+    list.appendChild(row);
+  });
+}
+
+window.addEventListener('load', renderList);
+</script>
+</body>
+</html>

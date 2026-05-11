@@ -1,0 +1,369 @@
+/* ============================================================
+   Shekulli.info — Design Tokens
+   Colors, type, spacing, radii, shadows, motion + semantic styles.
+   Load this once at the root of any page using the system.
+   ============================================================ */
+
+/* Webfonts — Google Fonts substitutions, flagged in README */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,700&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+  /* ---------- Color: brand ---------- */
+  /* Brand was reset to BLUE/WHITE per user direction (was Albanian-flag red).
+     Variable names kept as --brand-red* to avoid touching every component;
+     consider renaming to --brand-* in a follow-up sweep. */
+  --brand-red:        #1A8CFF;   /* brand bright blue (matches uploaded logo) */
+  --brand-red-deep:   #0E6BD0;   /* hover/pressed */
+  --brand-red-soft:   #E5F2FF;   /* tinted backgrounds (alerts, banners) */
+  --brand-blue:       var(--brand-red);       /* alias */
+  --brand-blue-deep:  var(--brand-red-deep);
+  --brand-blue-soft:  var(--brand-red-soft);
+
+  /* ---------- Color: ink (text) ---------- */
+  --ink-1:  #14161A;   /* body, headlines */
+  --ink-2:  #4A5058;   /* secondary */
+  --ink-3:  #8B9097;   /* meta, captions */
+  --ink-4:  #BFC2C7;   /* placeholder, disabled */
+
+  /* ---------- Color: surface ---------- */
+  --paper:        #FFFFFF;   /* page bg — clean white */
+  --paper-2:      #FFFFFF;   /* article body, card surfaces */
+  --paper-3:      #F3F6FB;   /* alt strip / hover bg — cool blue-tinted */
+  --paper-ink:    #0B1830;   /* dark surfaces (footer) — navy ink */
+
+  /* ---------- Color: structural ---------- */
+  --rule:         #E2E7EE;   /* hairlines — cool */
+  --rule-strong:  #C7CFDA;   /* tables, dividers */
+  --highlight:    #DDEBFF;   /* <mark>, pull-quotes — light blue wash */
+
+  /* ---------- Color: semantic ---------- */
+  --live:         #0E8A4F;   /* "live now" */
+  --warn:         #C77A00;
+  --link:         var(--ink-1);
+  --link-hover:   var(--brand-red);
+
+  /* ---------- Color: dark mode (opt-in via [data-theme="dark"]) ---------- */
+  /* applied below */
+
+  /* ---------- Type: families ---------- */
+  --font-display: 'Playfair Display', 'Times New Roman', Times, serif;
+  --font-serif:   'Source Serif 4', 'Georgia', serif;
+  --font-sans:    'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-mono:    ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+
+  /* ---------- Type: scale (1.25 modular) ---------- */
+  --text-xs:   12px;
+  --text-sm:   14px;
+  --text-base: 16px;
+  --text-md:   18px;
+  --text-lg:   22px;
+  --text-xl:   28px;
+  --text-2xl:  36px;
+  --text-3xl:  46px;
+  --text-4xl:  58px;
+  --text-5xl:  74px;
+  --text-6xl:  92px;
+
+  /* ---------- Type: leading & tracking ---------- */
+  --leading-tight: 1.05;
+  --leading-snug:  1.18;
+  --leading-base:  1.45;
+  --leading-loose: 1.65;
+  --tracking-tight:  -0.012em;
+  --tracking-normal: 0;
+  --tracking-kicker: 0.08em;
+
+  /* ---------- Spacing (8pt grid, with 4 as a half-step) ---------- */
+  --space-0:  0;
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  24px;
+  --space-6:  32px;
+  --space-7:  48px;
+  --space-8:  64px;
+  --space-9:  80px;
+  --space-10: 96px;
+  --space-11: 128px;
+
+  /* ---------- Radii ---------- */
+  --radius-0:    0;
+  --radius-1:    2px;
+  --radius-2:    4px;
+  --radius-pill: 999px;
+
+  /* ---------- Shadows (only one — overlays) ---------- */
+  --shadow-overlay: 0 8px 24px rgba(20, 22, 26, 0.12);
+
+  /* ---------- Layout ---------- */
+  --measure: 64ch;
+  --gutter: 24px;
+  --container: 1280px;
+
+  /* ---------- Motion ---------- */
+  --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --dur-fast: 120ms;
+  --dur-base: 200ms;
+  --dur-slow: 400ms;
+}
+
+[data-theme="dark"] {
+  --paper:    #0B1830;
+  --paper-2:  #112143;
+  --paper-3:  #18295A;
+  --ink-1:    #EAEEF6;
+  --ink-2:    #B5BED0;
+  --ink-3:    #8089A0;
+  --ink-4:    #4A536A;
+  --rule:     #1F3260;
+  --rule-strong: #2A3F73;
+  --highlight: #1F3F7A;
+}
+
+/* ============================================================
+   Base resets
+   ============================================================ */
+
+html { box-sizing: border-box; -webkit-text-size-adjust: 100%; }
+*, *::before, *::after { box-sizing: inherit; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink-1);
+  font-family: var(--font-serif);
+  font-size: var(--text-base);
+  line-height: var(--leading-base);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* ============================================================
+   Semantic typography — use these classes everywhere.
+   ============================================================ */
+
+.kicker {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-kicker);
+  text-transform: uppercase;
+  color: var(--brand-red);
+  line-height: 1;
+}
+.kicker--ink { color: var(--ink-1); }
+.kicker--muted { color: var(--ink-3); }
+
+.h-display, h1.display {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: var(--text-5xl);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-tight);
+  color: var(--ink-1);
+  text-wrap: balance;
+}
+
+.h1 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--text-3xl);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-tight);
+  text-wrap: balance;
+}
+
+.h2 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--text-2xl);
+  line-height: var(--leading-snug);
+  letter-spacing: var(--tracking-tight);
+  text-wrap: balance;
+}
+
+.h3 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--text-xl);
+  line-height: var(--leading-snug);
+}
+
+.h4 {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: var(--text-md);
+  line-height: var(--leading-snug);
+}
+
+.deck, .standfirst {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 400;
+  font-size: var(--text-md);
+  line-height: var(--leading-base);
+  color: var(--ink-2);
+}
+
+.body {
+  font-family: var(--font-serif);
+  font-size: var(--text-md);
+  line-height: var(--leading-loose);
+  color: var(--ink-1);
+}
+
+.body p + p { margin-top: 1em; text-indent: 1.25em; }
+.body p:first-child { text-indent: 0; }
+
+.body--ui {
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: var(--leading-base);
+}
+
+.meta {
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  color: var(--ink-3);
+  letter-spacing: 0.01em;
+}
+
+.caption {
+  font-family: var(--font-sans);
+  font-style: italic;
+  font-size: var(--text-xs);
+  color: var(--ink-3);
+  line-height: var(--leading-snug);
+}
+
+.pullquote {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-style: italic;
+  font-size: var(--text-2xl);
+  line-height: var(--leading-snug);
+  color: var(--ink-1);
+  border-top: 2px solid var(--brand-red);
+  border-bottom: 1px solid var(--rule);
+  padding: var(--space-5) 0;
+  margin: var(--space-6) 0;
+  text-wrap: balance;
+}
+
+a { color: var(--link); text-decoration: none; }
+a:hover { color: var(--link-hover); }
+
+mark { background: var(--highlight); padding: 0 .15em; }
+
+hr.rule { border: 0; border-top: 1px solid var(--rule); margin: var(--space-5) 0; }
+hr.rule--brand { border: 0; border-top: 2px solid var(--brand-red); margin: var(--space-5) 0; }
+
+/* ============================================================
+   Live dot indicator
+   ============================================================ */
+.live-dot {
+  display: inline-block;
+  width: 8px; height: 8px;
+  background: var(--brand-red);
+  border-radius: 50%;
+  margin-right: 6px;
+  vertical-align: middle;
+  animation: live-pulse 1.4s var(--ease-out) infinite;
+}
+@keyframes live-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: .55; transform: scale(.85); }
+}
+
+/* ============================================================
+   Buttons
+   ============================================================ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  padding: 10px 16px;
+  border-radius: var(--radius-2);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background var(--dur-base) var(--ease-out),
+              color var(--dur-base) var(--ease-out),
+              transform var(--dur-fast) var(--ease-out);
+}
+.btn:active { transform: translateY(1px); }
+.btn--primary { background: var(--brand-red); color: #fff; }
+.btn--primary:hover { background: var(--brand-red-deep); color: #fff; }
+.btn--ghost { background: transparent; color: var(--ink-1); border-color: var(--rule-strong); }
+.btn--ghost:hover { background: var(--paper-3); }
+
+/* ============================================================
+   Inputs
+   ============================================================ */
+.input {
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  padding: 10px 12px;
+  background: var(--paper-2);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--radius-1);
+  color: var(--ink-1);
+  width: 100%;
+  transition: border-color var(--dur-base) var(--ease-out),
+              transform var(--dur-fast) var(--ease-out);
+}
+.input:focus {
+  outline: none;
+  border-color: var(--ink-1);
+  transform: scale(1.005);
+}
+
+/* ============================================================
+   Tag / pill
+   ============================================================ */
+.tag {
+  display: inline-block;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-kicker);
+  padding: 4px 8px;
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--radius-2);
+  color: var(--ink-2);
+  background: transparent;
+}
+.tag--live {
+  background: var(--brand-red);
+  color: #fff;
+  border-color: var(--brand-red);
+}
+.tag--breaking {
+  background: var(--ink-1);
+  color: #fff;
+  border-color: var(--ink-1);
+}
+
+/* ============================================================
+   Card (editorial — no shadow, no radius, hairline rule)
+   ============================================================ */
+.card {
+  background: transparent;
+  border-top: 1px solid var(--rule);
+  padding-top: var(--space-4);
+}
+.card__headline {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--text-lg);
+  line-height: 1.18;
+  letter-spacing: var(--tracking-tight);
+  color: var(--ink-1);
+  text-wrap: balance;
+  transition: color var(--dur-base) var(--ease-out);
+}
+.card:hover .card__headline { color: var(--brand-red); }

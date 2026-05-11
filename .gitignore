@@ -1,0 +1,9 @@
+# Server
+server/node_modules/
+server/.env
+server/posts.json
+server/fb-auth.json
+server/debug/
+
+# OS
+.DS_Store

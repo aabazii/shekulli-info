@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="sq">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Shekulli.info — Informohu i pari me lajmin e fundit</title>
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="colors_and_type.css">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead__top">
+    <div class="masthead__left">
+      <button class="icon-btn" type="button" data-action="menu" aria-label="Menu" aria-expanded="false"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
+      <button class="icon-btn" type="button" data-action="search" aria-label="Search"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg></button>
+    </div>
+    <a href="/" class="masthead__brand" aria-label="Shekulli.info">
+      <img class="masthead__logo" src="assets/logo.png" alt="">
+    </a>
+    <div class="masthead__right">
+      <span class="masthead__date" id="today-date"></span>
+      
+    </div>
+  </div>
+  <div class="masthead__tagline">INFORMOHU I PARI ME LAJMIN E FUNDIT</div>
+  <nav class="masthead__nav">
+    <a class="masthead__nav-item is-active" href="/">Kryefaqja</a>
+    <a class="masthead__nav-item" href="category?cat=Politikë">Politikë</a>
+    <a class="masthead__nav-item" href="category?cat=Kosovë">Kosovë</a>
+    <a class="masthead__nav-item" href="category?cat=Botë">Botë</a>
+    <a class="masthead__nav-item" href="category?cat=Ekonomi">Ekonomi</a>
+    <a class="masthead__nav-item" href="category?cat=Sport">Sport</a>
+    <a class="masthead__nav-item" href="category?cat=Kulturë">Kulturë</a>
+    <a class="masthead__nav-item" href="category?cat=Opinion">Opinion</a>
+  </nav>
+</header>
+
+<div class="ticker">
+  <span class="ticker__label"><span class="live-dot"></span>DIREKT</span>
+  <div class="ticker__items" id="ticker-items"></div>
+</div>
+
+<main class="container home">
+  <div class="home__main" id="main-content"></div>
+
+  <aside class="home__rail">
+    <section class="rail">
+      <h4 class="rail__head">Më të lexuarat</h4>
+      <ol class="most-read" id="most-read"></ol>
+    </section>
+
+    <aside class="ad-slot" style="min-height:250px;">
+      <span class="ad-slot__label">REKLAMË</span>
+      <span class="ad-slot__placeholder">300 × 250</span>
+    </aside>
+
+    <section class="rail">
+      <h4 class="rail__head">Sport · Live</h4>
+      <div style="display:flex;flex-direction:column;gap:14px;">
+        <div style="display:flex;justify-content:space-between;font-family:var(--font-sans);font-size:13px;border-bottom:1px solid var(--rule);padding-bottom:10px;">
+          <span><b>Tirana</b> — Partizani</span><span style="color:var(--brand-red);font-weight:700;">2 — 1</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-family:var(--font-sans);font-size:13px;border-bottom:1px solid var(--rule);padding-bottom:10px;">
+          <span>Vllaznia — Skënderbeu</span><span style="color:var(--ink-3);">19:00</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-family:var(--font-sans);font-size:13px;">
+          <span>Laçi — Egnatia</span><span style="color:var(--ink-3);">21:00</span>
+        </div>
+      </div>
+    </section>
+  </aside>
+</main>
+
+<footer class="footer">
+  <div class="footer__grid">
+    <div>
+      <img src="assets/logo.png" alt="Shekulli.info" style="width:96px;height:96px;border-radius:50%;display:block;">
+      <p class="footer__tag">Informohu i pari me lajmin e fundit</p>
+    </div>
+    <div class="footer__col">
+      <h4>Rubrikat</h4>
+      <a href="category?cat=Politikë">Politikë</a>
+      <a href="category?cat=Kosovë">Kosovë</a>
+      <a href="category?cat=Botë">Botë</a>
+      <a href="category?cat=Ekonomi">Ekonomi</a>
+      <a href="category?cat=Sport">Sport</a>
+      <a href="category?cat=Opinion">Opinion</a>
+    </div>
+    <div class="footer__col">
+      <h4>Rreth nesh</h4>
+      <a href="#">Redaksia</a><a href="#">Etika</a><a href="#">Kontakt</a><a href="#">Reklamat</a>
+    </div>
+    <div class="footer__col">
+      <h4>Na ndiqni</h4>
+      <a href="https://www.facebook.com/shekulliinfo" target="_blank" rel="noopener">Facebook</a>
+      <a href="#">YouTube</a><a href="#">Instagram</a><a href="#">RSS</a>
+    </div>
+  </div>
+  <div class="footer__legal">
+    <span>© 2026 Shekulli.info · Stuttgart, DE</span>
+    <span>Privatësia · Kushtet e përdorimit</span>
+  </div>
+</footer>
+
+<script src="articles.js"></script>
+<script src="ui.js"></script>
+<script>
+try {
+const { getArticles, getArticlesByCategory, timeAgo, buildCard } = window.ShekullDB;
+
+/* Date in header */
+document.getElementById('today-date').textContent = new Date().toLocaleDateString('sq-AL', {
+  weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+});
+
+const all = getArticles();
+const main = document.getElementById('main-content');
+
+/* ── If no articles yet, show a loading state and wait for API ── */
+if (all.length === 0) {
+  main.innerHTML = `
+    <div style="padding:60px 0;text-align:center;color:var(--ink-3);font-family:var(--font-sans);">
+      <div style="font-size:32px;margin-bottom:12px;">🗞</div>
+      <p style="font-size:15px;margin:0;">Duke ngarkuar lajmet nga Facebook…</p>
+      <p style="font-size:12px;margin:8px 0 0;color:var(--ink-4);">Kontrolloni që serveri të jetë duke punuar.</p>
+    </div>`;
+  window.ShekullDB.refreshFromAPI(function() { location.reload(); });
+  throw new Error('__NO_ARTICLES__'); // jump to catch (which we silence below)
+}
+
+/* Ticker — latest 5 headlines */
+const ticker = document.getElementById('ticker-items');
+all.slice(0, 5).forEach(a => {
+  const span = document.createElement('span');
+  span.className = 'ticker__item';
+  const t = new Date(a.published);
+  const hh = String(t.getHours()).padStart(2,'0');
+  const mm = String(t.getMinutes()).padStart(2,'0');
+  span.innerHTML = `<a href="article?id=${a.id}" style="color:inherit;text-decoration:none;"><span class="ticker__time">${hh}:${mm}</span><span class="ticker__text">${a.title}</span></a>`;
+  ticker.appendChild(span);
+});
+
+/* Most-read rail */
+const mostRead = document.getElementById('most-read');
+all.slice(0, 5).forEach((a, i) => {
+  const li = document.createElement('li');
+  li.className = 'most-read__row';
+  li.innerHTML = `<span class="most-read__num">${i+1}</span><a href="article?id=${a.id}" class="most-read__title">${a.title}</a>`;
+  mostRead.appendChild(li);
+});
+
+function sectionStrip(cat) {
+  return `<div class="section-strip">
+    <h2 class="section-strip__title">${cat}</h2>
+    <a class="section-strip__more" href="category?cat=${encodeURIComponent(cat)}">Të gjitha →</a>
+  </div>`;
+}
+
+function renderGrid(articles, count, size) {
+  const div = document.createElement('div');
+  div.className = size === 'lg' ? 'grid-2' : 'grid-3';
+  articles.slice(0, count).forEach(a => div.appendChild(buildCard(a, size)));
+  return div;
+}
+
+/* Lead story */
+const lead = all[0];
+if (lead) {
+  const art = document.createElement('article');
+  art.className = 'lead';
+  art.innerHTML = `
+    <a href="article?id=${lead.id}" class="lead__photo" style="${lead.photo ? "background-image:url('" + lead.photo + "')" : 'background:linear-gradient(135deg,#1d2f55,#0b1830)'}">
+      <span class="photo-placeholder">FOTO</span>
+    </a>
+    <div class="lead__copy">
+      <span class="kicker kicker--ink">${lead.kicker || lead.category.toUpperCase()}</span>
+      <h1 class="lead__headline"><a href="article?id=${lead.id}" style="color:inherit;text-decoration:none;">${lead.title}</a></h1>
+      <p class="deck">${lead.standfirst}</p>
+      <div class="lead__meta">
+        <span class="meta">Nga <b style="color:var(--ink-1)">${lead.author}</b></span>
+        <span class="meta">·</span>
+        <span class="meta">${timeAgo(lead.published)}</span>
+      </div>
+    </div>`;
+  main.appendChild(art);
+}
+
+/* Next stories as grid (skip lead) */
+if (all.length > 1) {
+  const hr = document.createElement('hr');
+  hr.className = 'rule';
+  main.appendChild(hr);
+  main.appendChild(renderGrid(all.slice(1, 4), 3, 'md'));
+}
+
+/* Section strips for each category that has articles */
+const cats = ['Politikë', 'Botë', 'Ekonomi', 'Kosovë', 'Sport', 'Kulturë', 'Opinion', 'Lajme'];
+cats.forEach(cat => {
+  const catArticles = getArticlesByCategory(cat).filter(a => a.id !== lead?.id);
+  if (catArticles.length === 0) return;
+  main.insertAdjacentHTML('beforeend', sectionStrip(cat));
+  main.appendChild(renderGrid(catArticles, 3, 'md'));
+});
+
+} catch(e) {
+  if (e.message !== '__NO_ARTICLES__') {
+    document.getElementById('main-content').innerHTML = '<pre style="color:red;font-size:11px;padding:20px;">' + e.name + ': ' + e.message + '\n' + e.stack + '</pre>';
+  }
+}
+
+/* Pull from backend API and re-render if newer data arrives */
+window.ShekullDB.refreshFromAPI(function() { location.reload(); });
+</script>
+</body>
+</html>

@@ -72,7 +72,7 @@ async function scrapeFacebookPosts() {
     while (scrolls < MAX_SCROLLS) {
       // Get current post count
       const postCount = await page.evaluate(() => {
-        return document.querySelectorAll('[data-testid="post"]').length;
+        return document.querySelectorAll('[role="article"]').length;
       });
 
       process.stdout.write(`\r  Scroll ${scrolls + 1}/${MAX_SCROLLS} | Posts found: ${postCount}`);
@@ -106,20 +106,23 @@ async function scrapeFacebookPosts() {
     console.log('🔍 Extracting post data...\n');
     
     const posts = await page.evaluate(() => {
-      const postElements = document.querySelectorAll('[data-testid="post"]');
+      const postElements = document.querySelectorAll('[role="article"]');
       const posts = [];
       let id = 1;
 
       postElements.forEach((element) => {
         try {
           // Get post text/content
-          const textEl = element.querySelector('[data-testid="post_message"]');
+          const textEl = element.querySelector('[data-testid="post_message"], div[dir="auto"]');
           let text = textEl?.innerText?.trim() || '';
-          
+
           // Fallback: try to get any text content
           if (!text) {
             const allText = element.innerText?.split('\n') || [];
-            text = allText.find(t => t && t.length > 10) || 'Post without text';
+            // Filter out common Facebook UI text
+            text = allText
+              .filter(t => t && t.length > 10 && !t.match(/^(Like|Comment|Share|More|Follow)/i))
+              .find(t => t) || 'Post without text';
           }
 
           // Limit title to 140 chars

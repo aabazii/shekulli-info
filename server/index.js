@@ -14,9 +14,17 @@ const app = express();
 app.use(cors({ origin: '*' }));
 app.use(express.json());
 
-/* ── Serve /admin page ─────────────────────────────────────────────── */
+/* ── Serve dynamic pages (must be before static middleware) ──────────── */
 app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'admin.html'));
+});
+
+app.get('/article', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'article.html'));
+});
+
+app.get('/category', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'category.html'));
 });
 
 /* ── Serve the static site ─────────────────────────────────────── */

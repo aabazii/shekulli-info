@@ -14,18 +14,12 @@ const app = express();
 app.use(cors({ origin: '*' }));
 app.use(express.json());
 
-/* ── Serve dynamic pages (must be before static middleware) ──────────── */
-app.get('/admin', (req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'admin.html'));
-});
-
-app.get('/article', (req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'article.html'));
-});
-
-app.get('/category', (req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'category.html'));
-});
+/* ── HTML page routes (before static, so they take priority) ──────── */
+const ROOT = path.join(__dirname, '..');
+app.get('/admin',    (_req, res) => res.sendFile(path.join(ROOT, 'admin.html')));
+app.get('/article',  (_req, res) => res.sendFile(path.join(ROOT, 'article.html')));
+app.get('/category', (_req, res) => res.sendFile(path.join(ROOT, 'category.html')));
+app.get('/',         (_req, res) => res.sendFile(path.join(ROOT, 'index.html')));
 
 /* ── Serve the static site ─────────────────────────────────────── */
 app.use(express.static(path.join(__dirname, '..')));

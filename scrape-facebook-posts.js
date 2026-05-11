@@ -1,13 +1,17 @@
 #!/usr/bin/env node
 
 /**
- * Facebook Posts Scraper
- * 
- * This script automatically scrapes ALL posts from your Facebook page
- * and saves them as JSON ready for import into Shekulli.info
- * 
- * Usage:
- *   node scrape-facebook-posts.js
+ * Facebook Posts Scraper (Puppeteer — fragile)
+ *
+ * facebook.com often shows a login wall or empty feed when headless.
+ * Recommended: official Graph API instead → npm run fb:graph
+ *   (see scripts/fetch-facebook-graph-posts.js)
+ *
+ * If you still use this script:
+ *   HEADFUL=1 node scrape-facebook-posts.js
+ * Log in manually in the opened window, then wait for scroll to finish.
+ *
+ * Page: https://www.facebook.com/shekulliinfo
  */
 
 const puppeteer = require('puppeteer');
@@ -27,8 +31,9 @@ async function scrapeFacebookPosts() {
     console.log('🚀 Starting Facebook post scraper...\n');
     
     // Launch browser with stealth mode
+    const headful = process.env.HEADFUL === '1' || process.env.HEADFUL === 'true';
     browser = await puppeteer.launch({
-      headless: 'new',
+      headless: headful ? false : 'new',
       args: [
         '--disable-blink-features=AutomationControlled',
         '--no-sandbox',
@@ -45,11 +50,11 @@ async function scrapeFacebookPosts() {
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
     );
 
-    // Block unnecessary resources to speed up loading
+    // Block heavy assets only (keep stylesheets — FB layout depends on CSS)
     await page.setRequestInterception(true);
     page.on('request', (request) => {
       const resourceType = request.resourceType();
-      if (['image', 'stylesheet', 'font', 'media'].includes(resourceType)) {
+      if (['image', 'font', 'media'].includes(resourceType)) {
         request.abort();
       } else {
         request.continue();

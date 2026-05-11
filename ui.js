@@ -178,19 +178,15 @@
       input.value = '';
       renderSearchResults([], '');
       setTimeout(() => input.focus(), 0);
-      // Only bind the listener once — guard with a data attribute
-      if (!input.dataset.bound) {
-        input.dataset.bound = '1';
-        input.addEventListener(
-          'input',
-          () => {
-            const q = input.value || '';
-            const res = searchIndex(q);
-            renderSearchResults(res, q);
-          },
-          { passive: true }
-        );
-      }
+      input.addEventListener(
+        'input',
+        () => {
+          const q = input.value || '';
+          const res = searchIndex(q);
+          renderSearchResults(res, q);
+        },
+        { passive: true }
+      );
     }
   }
 

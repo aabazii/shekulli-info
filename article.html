@@ -1,107 +1,121 @@
 <!doctype html>
 <html lang="sq">
+
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Shekulli.info</title>
-<meta name="description" content="Lexoni artikullin e plotë në Shekulli.info — portali informativ shqiptar.">
-<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="colors_and_type.css">
-<link rel="stylesheet" href="styles.css">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Shekulli.info</title>
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="colors_and_type.css">
+  <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
 
-<header class="masthead">
-  <div class="masthead__top">
-    <div class="masthead__left">
-      <button class="icon-btn" type="button" data-action="menu" aria-label="Menu" aria-expanded="false"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
-      <button class="icon-btn" type="button" data-action="search" aria-label="Search"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg></button>
+  <header class="masthead">
+    <div class="masthead__top">
+      <div class="masthead__left">
+        <button class="icon-btn" type="button" data-action="menu" aria-label="Menu" aria-expanded="false"><svg
+            width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M3 6h18M3 12h18M3 18h18" />
+          </svg></button>
+        <button class="icon-btn" type="button" data-action="search" aria-label="Search"><svg width="20" height="20"
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <circle cx="11" cy="11" r="7" />
+            <path d="m20 20-3-3" />
+          </svg></button>
+      </div>
+      <a href="/" class="masthead__brand" aria-label="Shekulli.info"><img class="masthead__logo" src="assets/logo.png"
+          alt="Shekulli.info"></a>
+      <div class="masthead__right">
+
+      </div>
     </div>
-    <a href="/" class="masthead__brand" aria-label="Shekulli.info"><img class="masthead__logo" src="assets/logo.png" alt="Shekulli.info"></a>
-    <div class="masthead__right">
-      
+    <nav class="masthead__nav">
+      <a class="masthead__nav-item" href="/">Kryefaqja</a>
+      <a class="masthead__nav-item" href="category?cat=Politikë">Politikë</a>
+      <a class="masthead__nav-item" href="category?cat=Kosovë">Kosovë</a>
+      <a class="masthead__nav-item" href="category?cat=Botë">Botë</a>
+      <a class="masthead__nav-item" href="category?cat=Ekonomi">Ekonomi</a>
+      <a class="masthead__nav-item" href="category?cat=Sport">Sport</a>
+      <a class="masthead__nav-item" href="category?cat=Opinion">Opinion</a>
+    </nav>
+  </header>
+
+  <article class="article" id="article-body">
+    <div style="text-align:center;padding:80px 0;color:var(--ink-3);font-family:var(--font-sans);">Duke ngarkuar…</div>
+  </article>
+
+  <section class="container" style="max-width:720px;margin:0 auto;padding-bottom:48px;">
+    <hr class="rule" style="margin:48px 0 24px;">
+    <span class="kicker">VAZHDONI TË LEXONI</span>
+    <div class="grid-2" id="related" style="margin-top:18px;"></div>
+  </section>
+
+  <footer class="footer">
+    <div class="footer__grid">
+      <div>
+        <img src="assets/logo.png" alt="Shekulli.info" style="width:96px;height:96px;border-radius:50%;display:block;">
+        <p class="footer__tag">Informohu i pari me lajmin e fundit</p>
+      </div>
+      <div class="footer__col">
+        <h4>Rubrikat</h4>
+        <a href="category?cat=Politikë">Politikë</a>
+        <a href="category?cat=Kosovë">Kosovë</a>
+        <a href="category?cat=Botë">Botë</a>
+        <a href="category?cat=Ekonomi">Ekonomi</a>
+        <a href="category?cat=Sport">Sport</a>
+      </div>
+      <div class="footer__col">
+        <h4>Rreth nesh</h4><a href="#">Redaksia</a><a href="#">Etika</a><a href="#">Kontakt</a>
+      </div>
+      <div class="footer__col">
+        <h4>Na ndiqni</h4><a href="https://www.facebook.com/shekulliinfo" target="_blank" rel="noopener">Facebook</a><a
+          href="#">YouTube</a><a href="#">RSS</a>
+      </div>
     </div>
-  </div>
-  <nav class="masthead__nav">
-    <a class="masthead__nav-item" href="/">Kryefaqja</a>
-    <a class="masthead__nav-item" href="category?cat=Politikë">Politikë</a>
-    <a class="masthead__nav-item" href="category?cat=Kosovë">Kosovë</a>
-    <a class="masthead__nav-item" href="category?cat=Botë">Botë</a>
-    <a class="masthead__nav-item" href="category?cat=Ekonomi">Ekonomi</a>
-    <a class="masthead__nav-item" href="category?cat=Sport">Sport</a>
-    <a class="masthead__nav-item" href="category?cat=Opinion">Opinion</a>
-  </nav>
-</header>
+    <div class="footer__legal"><span>© 2026 Shekulli.info · Stuttgart, DE</span><span>Privatësia · Kushtet</span></div>
+  </footer>
 
-<article class="article" id="article-body">
-  <div style="text-align:center;padding:80px 0;color:var(--ink-3);font-family:var(--font-sans);">Duke ngarkuar…</div>
-</article>
+  <script src="articles.js"></script>
+  <script src="ui.js"></script>
+  <script>
+    try {
+      const { getArticleById, getArticles, timeAgo, formatDate, buildCard } = window.ShekullDB;
 
-<section class="container" style="max-width:720px;margin:0 auto;padding-bottom:48px;">
-  <hr class="rule" style="margin:48px 0 24px;">
-  <span class="kicker">VAZHDONI TË LEXONI</span>
-  <div class="grid-2" id="related" style="margin-top:18px;"></div>
-</section>
+      const params = new URLSearchParams(location.search);
+      const id = params.get('id');
+      const article = id ? getArticleById(id) : getArticles()[0];
 
-<footer class="footer">
-  <div class="footer__grid">
-    <div>
-      <img src="assets/logo.png" alt="Shekulli.info" style="width:96px;height:96px;border-radius:50%;display:block;">
-      <p class="footer__tag">Informohu i pari me lajmin e fundit</p>
-    </div>
-    <div class="footer__col">
-      <h4>Rubrikat</h4>
-      <a href="category?cat=Politikë">Politikë</a>
-      <a href="category?cat=Kosovë">Kosovë</a>
-      <a href="category?cat=Botë">Botë</a>
-      <a href="category?cat=Ekonomi">Ekonomi</a>
-      <a href="category?cat=Sport">Sport</a>
-    </div>
-    <div class="footer__col"><h4>Rreth nesh</h4><a href="#">Redaksia</a><a href="#">Etika</a><a href="#">Kontakt</a></div>
-    <div class="footer__col"><h4>Na ndiqni</h4><a href="https://www.facebook.com/shekulliinfo" target="_blank" rel="noopener">Facebook</a><a href="#">YouTube</a><a href="#">RSS</a></div>
-  </div>
-  <div class="footer__legal"><span>© 2026 Shekulli.info · Stuttgart, DE</span><span>Privatësia · Kushtet</span></div>
-</footer>
+      const container = document.getElementById('article-body');
 
-<script src="articles.js"></script>
-<script src="ui.js"></script>
-<script>
-try {
-const { getArticleById, getArticles, timeAgo, formatDate, buildCard } = window.ShekullDB;
+      if (!article) {
+        container.innerHTML = '<p style="text-align:center;padding:80px 0;font-family:var(--font-sans);">Artikulli nuk u gjet.</p>';
+      } else {
+        document.title = article.title + ' — Shekulli.info';
 
-const params = new URLSearchParams(location.search);
-const id = params.get('id');
-const article = id ? getArticleById(id) : getArticles()[0];
+        /* Mark active nav item */
+        document.querySelectorAll('.masthead__nav-item').forEach(a => {
+          const url = new URL(a.href, location.href);
+          if (url.searchParams.get('cat') === article.category) a.classList.add('is-active');
+        });
 
-const container = document.getElementById('article-body');
+        /* Body paragraphs */
+        const bodyHtml = article.body
+          .split(/\n\n+/)
+          .map(p => p.trim())
+          .filter(Boolean)
+          .map((p, i) => {
+            if (p.startsWith('"') && p.endsWith('"') && p.length < 300) {
+              return `<blockquote class="pullquote">${p}</blockquote>`;
+            }
+            return `<p>${p}</p>`;
+          })
+          .join('\n');
 
-if (!article) {
-  container.innerHTML = '<p style="text-align:center;padding:80px 0;font-family:var(--font-sans);">Artikulli nuk u gjet.</p>';
-} else {
-  document.title = article.title + ' — Shekulli.info';
+        const initials = article.author.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
 
-  /* Mark active nav item */
-  document.querySelectorAll('.masthead__nav-item').forEach(a => {
-    const url = new URL(a.href, location.href);
-    if (url.searchParams.get('cat') === article.category) a.classList.add('is-active');
-  });
-
-  /* Body paragraphs */
-  const bodyHtml = article.body
-    .split(/\n\n+/)
-    .map(p => p.trim())
-    .filter(Boolean)
-    .map((p, i) => {
-      if (p.startsWith('"') && p.endsWith('"') && p.length < 300) {
-        return `<blockquote class="pullquote">${p}</blockquote>`;
-      }
-      return `<p>${p}</p>`;
-    })
-    .join('\n');
-
-  const initials = article.author.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
-
-  container.innerHTML = `
+        container.innerHTML = `
     <span class="kicker kicker--ink">${article.kicker || article.category.toUpperCase()}</span>
     <h1 class="h-display article__headline">${article.title}</h1>
     <p class="standfirst">${article.standfirst}</p>
@@ -130,15 +144,16 @@ if (!article) {
 
     <div class="body article__body">${bodyHtml}</div>`;
 
-  /* Related articles */
-  const related = getArticles().filter(a => a.id !== article.id).slice(0, 2);
-  const relatedEl = document.getElementById('related');
-  related.forEach(a => relatedEl.appendChild(buildCard(a, 'sm')));
-}
-} catch(e) { console.error('Shekulli render error:', e); }
+        /* Related articles */
+        const related = getArticles().filter(a => a.id !== article.id).slice(0, 2);
+        const relatedEl = document.getElementById('related');
+        related.forEach(a => relatedEl.appendChild(buildCard(a, 'sm')));
+      }
+    } catch (e) { console.error('Shekulli render error:', e); }
 
-/* Pull fresh FB posts silently — no reload needed on article page */
-window.ShekullDB.refreshFromAPI(function() { /* new posts stored — reload only if user navigates */ });
-</script>
+    /* Pull fresh FB posts silently — no reload needed on article page */
+    window.ShekullDB.refreshFromAPI(function () { /* new posts stored — reload only if user navigates */ });
+  </script>
 </body>
+
 </html>

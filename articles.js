@@ -21,7 +21,14 @@ function _save(articles) {
    Falls back silently to whatever is in localStorage if backend is down.
    Pages call refreshFromAPI() on load and reload when new data arrives.
 ──────────────────────────────────────────────────────────────────── */
-const API_BASE = 'http://localhost:4000/api';
+const API_BASE = (function() {
+  // In production the API lives on the same origin as the page.
+  // Only fall back to localhost:4000 when opening files directly (file:// protocol).
+  if (typeof location !== 'undefined' && location.protocol !== 'file:') {
+    return location.origin + '/api';
+  }
+  return 'http://localhost:4000/api';
+})();
 
 function refreshFromAPI(onDone) {
   fetch(API_BASE + '/articles?limit=100')

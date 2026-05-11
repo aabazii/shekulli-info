@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Shekulli.info — Informohu i pari me lajmin e fundit</title>
+<meta name="description" content="Shekulli.info — portali informativ shqiptar. Lajme nga Shqipëria, Kosova dhe bota, politikë, ekonomi, sport, kulturë dhe opinion.">
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="colors_and_type.css">
 <link rel="stylesheet" href="styles.css">
@@ -204,14 +205,14 @@ cats.forEach(cat => {
   main.appendChild(renderGrid(catArticles, 3, 'md'));
 });
 
+/* Pull from backend API and re-render if newer data arrives */
+window.ShekullDB.refreshFromAPI(function() { location.reload(); });
+
 } catch(e) {
   if (e.message !== '__NO_ARTICLES__') {
     document.getElementById('main-content').innerHTML = '<pre style="color:red;font-size:11px;padding:20px;">' + e.name + ': ' + e.message + '\n' + e.stack + '</pre>';
   }
 }
-
-/* Pull from backend API and re-render if newer data arrives */
-window.ShekullDB.refreshFromAPI(function() { location.reload(); });
 </script>
 </body>
 </html>

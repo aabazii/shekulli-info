@@ -178,15 +178,19 @@
       input.value = '';
       renderSearchResults([], '');
       setTimeout(() => input.focus(), 0);
-      input.addEventListener(
-        'input',
-        () => {
-          const q = input.value || '';
-          const res = searchIndex(q);
-          renderSearchResults(res, q);
-        },
-        { passive: true }
-      );
+      // Only bind the listener once — guard with a data attribute
+      if (!input.dataset.bound) {
+        input.dataset.bound = '1';
+        input.addEventListener(
+          'input',
+          () => {
+            const q = input.value || '';
+            const res = searchIndex(q);
+            renderSearchResults(res, q);
+          },
+          { passive: true }
+        );
+      }
     }
   }
 

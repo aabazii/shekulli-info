@@ -1,0 +1,35 @@
+[
+  {
+    "id": "378914789_9876543210",
+    "text": "Qeveria shpall plan për zhvillimin ekonomik 2026",
+    "body": "Qeveria shpalli sot planin ambicioz për zhvillimin ekonomik të vendit në periudhën 2026-2030. Plani përfshin investime të konsiderueshme në infrastrukturë, edukacion dhe teknologji.",
+    "category": "Politikë",
+    "author": "Shekulli.info",
+    "published": 1715000000000,
+    "photo": "https://example.com/photo1.jpg"
+  },
+  {
+    "id": "378914789_9876543211",
+    "text": "Prishtina: Aktivitete sportive për të rinjtë",
+    "body": "Qyteti i Prishtinës lansoi këtë javë programin e ri për aktivitetet sportive drejtuar të rinjve. Programi synon rritjen e aktivitetit fizik dhe angazhimin në sport.",
+    "category": "Sport",
+    "author": "Shekulli.info",
+    "published": 1714999000000
+  },
+  {
+    "id": "378914789_9876543212",
+    "text": "Inflacioni në Kosovë bie me 3%",
+    "body": "Sipas statistikave të fundit të Bankës Qendrore, inflacioni në ekonominë kosovare ra me 3% në muajin prill. Kjo shënon një rënie të ndjeshme krahasuar me tre muajt e mëparshëm.",
+    "category": "Ekonomi",
+    "author": "Shekulli.info",
+    "published": 1714998000000
+  },
+  {
+    "id": "378914789_9876543213",
+    "text": "Festivali i kulturës në Prizren",
+    "body": "Prizreni përgatitet për festivalin e 10-të të kulturës shqiptare. Festivali do të përfshin ekspozita, performanca teatrore dhe këngë tradicionale.",
+    "category": "Kulturë",
+    "author": "Shekulli.info",
+    "published": 1714997000000
+  }
+]

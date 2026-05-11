@@ -43,9 +43,10 @@ async function scrapeFacebookPosts() {
     await page.setUserAgent(
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
     );
-    
+
     // Block unnecessary resources to speed up loading
-    await page.on('request', (request) => {
+    await page.setRequestInterception(true);
+    page.on('request', (request) => {
       const resourceType = request.resourceType();
       if (['image', 'stylesheet', 'font', 'media'].includes(resourceType)) {
         request.abort();

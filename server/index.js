@@ -130,6 +130,17 @@ app.post('/api/admin/import', checkAuth, (req, res) => {
   }
 });
 
+/* ── POST /api/admin/fix-timestamps — one-time fix ───────────────── */
+app.post('/api/admin/fix-timestamps', checkAuth, (req, res) => {
+  const posts = loadPosts();
+  const fixed = posts.map(p => ({
+    ...p,
+    published: p.published < 1e12 ? p.published * 1000 : p.published
+  }));
+  fs.writeFileSync(POSTS_FILE, JSON.stringify(fixed, null, 2));
+  res.json({ ok: true, message: `Fixed timestamps for ${fixed.length} posts` });
+});
+
 /* ── Cron: scrape every 1 minute ────────────────────────────────── */
 cron.schedule('* * * * *', async () => {
   if (syncing) return;

@@ -165,7 +165,12 @@ async function scrapePosts() {
         id: item.postId || item.facebookId || 'post_' + Math.random().toString(36).slice(2),
         text: item.text,
         image: item.media?.[0]?.src || '',
-        timestamp: item.timestamp ? new Date(item.timestamp).getTime() : Date.now(),
+        timestamp: (() => {
+          if (!item.timestamp) return Date.now();
+          const t = new Date(item.timestamp).getTime();
+          // If result is suspiciously small, it came in as Unix seconds — multiply by 1000
+          return t < 1e12 ? t * 1000 : t;
+        })(),
       }));
 
     console.log(`[Scraper] Parsed ${rawPosts.length} posts`);

@@ -16,9 +16,9 @@ const path = require('path');
 
 const FB_PAGE = 'https://www.facebook.com/shekulliinfo';
 const OUTPUT_FILE = path.join(__dirname, 'scraped_posts.json');
-const SCROLL_DELAY = 3000; // 3 seconds between scrolls (Facebook needs time to load)
-const MAX_SCROLLS = 300; // More scrolls to get all posts
-const LOAD_TIMEOUT = 5000; // Wait up to 5 seconds for content to load
+const SCROLL_DELAY = 5000; // 5 seconds between scrolls (give Facebook time to load)
+const MAX_SCROLLS = 500; // Scroll up to 500 times
+const LOAD_TIMEOUT = 8000; // Wait up to 8 seconds for content to load
 
 async function scrapeFacebookPosts() {
   let browser;
@@ -95,13 +95,15 @@ async function scrapeFacebookPosts() {
 
       if (newPostCount === previousPostCount) {
         noNewPostsCount++;
-        // Be more persistent - don't give up after just 3 attempts
-        if (noNewPostsCount > 10) {
-          console.log('\n✅ Reached end of page (no new posts loading after 10 attempts)\n');
+        // Be VERY persistent - wait 50+ attempts with no new posts
+        if (noNewPostsCount > 50) {
+          console.log(`\n✅ Reached end (no new posts after ${noNewPostsCount} attempts)\n`);
           break;
         }
       } else {
-        noNewPostsCount = 0; // Reset if new posts found
+        // New posts found! Reset counter
+        console.log(`\n  ✓ Found ${newPostCount - previousPostCount} new posts`);
+        noNewPostsCount = 0;
       }
 
       previousPostCount = newPostCount;

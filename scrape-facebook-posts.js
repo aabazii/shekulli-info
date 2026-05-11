@@ -83,7 +83,7 @@ async function scrapeFacebookPosts() {
       });
 
       // Wait for potential new content to load
-      await page.waitForTimeout(SCROLL_DELAY);
+      await new Promise(resolve => setTimeout(resolve, SCROLL_DELAY));
 
       // Check if new content loaded
       const newHeight = await page.evaluate(() => document.body.scrollHeight);

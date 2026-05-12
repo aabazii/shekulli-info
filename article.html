@@ -8,6 +8,10 @@
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="colors_and_type.css">
   <link rel="stylesheet" href="styles.css">
+  <!-- Facebook SDK for video embeds -->
+  <div id="fb-root"></div>
+  <script async defer crossorigin="anonymous"
+    src="https://connect.facebook.net/sq_AL/sdk.js#xfbml=1&version=v19.0"></script>
 </head>
 
 <body>
@@ -136,7 +140,15 @@
       </div>
     </div>
 
-    ${article.photo ? `
+    ${article.hasVideo && article.postUrl ? `
+    <div style="margin:24px 0;display:flex;justify-content:center;">
+      <div class="fb-video"
+        data-href="${article.postUrl}"
+        data-width="600"
+        data-show-text="false"
+        data-autoplay="false">
+      </div>
+    </div>` : article.photo ? `
     <div class="article__photo" style="background-image:url('${article.photo}')">
       <span class="photo-placeholder">FOTO</span>
     </div>

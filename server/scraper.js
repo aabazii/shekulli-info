@@ -52,6 +52,8 @@ function postToArticle(post) {
     standfirst: rest.slice(0, 300),
     body:       rest,
     photo:      post.image || '',
+    hasVideo:   post.hasVideo || false,
+    postUrl:    post.postUrl || '',
     author:     'Shekulli.info',
     published:  post.timestamp || Date.now(),
   };
@@ -107,15 +109,29 @@ async function scrapePosts() {
             .join('\n');
         }
 
-        // Image — re-enable images briefly isn't possible here, so grab data-src or src
+        // Image
         let image = '';
         const imgEl = el.querySelector('img[src]:not([src*="emoji"]):not([src*="static"])');
         if (imgEl) image = imgEl.getAttribute('src') || '';
 
-        // Video thumbnail
-        if (!image) {
-          const videoEl = el.querySelector('video[poster]');
-          if (videoEl) image = videoEl.getAttribute('poster') || '';
+        // Video detection — grab poster thumbnail + the Facebook post link for embedding
+        let videoUrl = '';
+        let hasVideo = false;
+        const videoEl = el.querySelector('video');
+        if (videoEl) {
+          hasVideo = true;
+          image = videoEl.getAttribute('poster') || image;
+        }
+
+        // Get the Facebook post permalink (used for video embedding)
+        let postUrl = '';
+        const linkEls = el.querySelectorAll('a[href*="/posts/"], a[href*="?v="], a[href*="/videos/"]');
+        for (const a of linkEls) {
+          const href = a.getAttribute('href') || '';
+          if (href.includes('/posts/') || href.includes('/videos/') || href.includes('?v=')) {
+            postUrl = href.startsWith('http') ? href : 'https://www.facebook.com' + href;
+            break;
+          }
         }
 
         // Timestamp
@@ -126,11 +142,11 @@ async function scrapePosts() {
           if (utime) published = parseInt(utime) * 1000;
         }
 
-        // Build a stable ID from position + text snippet
+        // Stable ID
         const id = 'fb_' + idx + '_' + btoa(encodeURIComponent((text || image).slice(0, 40))).replace(/[^a-z0-9]/gi, '').slice(0, 16);
 
-        if (text || image) {
-          results.push({ id, text, image, published });
+        if (text || image || hasVideo) {
+          results.push({ id, text, image, published, hasVideo, postUrl });
         }
       });
 

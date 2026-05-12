@@ -1,10 +1,9 @@
 /* Shekulli.info — Puppeteer Facebook Scraper
-   Runs on the server every minute, scrapes the public FB page,
-   deduplicates by post ID, and saves to posts.json.
+   Scrapes the public FB page every minute.
+   Uses full puppeteer (downloads its own Chromium — works on Render).
 */
 
-const puppeteer = require('puppeteer-core');
-const chromium  = require('@sparticuz/chromium');
+const puppeteer = require('puppeteer');
 const fs        = require('fs');
 const path      = require('path');
 
@@ -38,10 +37,10 @@ function postToArticle(post) {
     .replace(/Shiko më shumë[\s\S]*/i, '')
     .trim();
 
-  const lines      = cleaned.split('\n').map(l => l.trim()).filter(Boolean);
-  const title      = lines[0]?.slice(0, 140) || (post.image ? '📷 Foto nga Shekulli.info' : '(pa titull)');
-  const rest       = lines.slice(1).join('\n').trim();
-  const category   = guessCategory(post.text);
+  const lines    = cleaned.split('\n').map(l => l.trim()).filter(Boolean);
+  const title    = lines[0]?.slice(0, 140) || (post.image ? '📷 Foto nga Shekulli.info' : '(pa titull)');
+  const rest     = lines.slice(1).join('\n').trim();
+  const category = guessCategory(post.text);
 
   return {
     id:         post.id,
@@ -65,10 +64,16 @@ async function scrapePosts() {
     console.log('[Scraper] Launching browser…');
 
     browser = await puppeteer.launch({
-      args: chromium.args,
-      defaultViewport: chromium.defaultViewport,
-      executablePath: await chromium.executablePath(),
-      headless: chromium.headless,
+      headless: 'new',
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
+        '--no-first-run',
+        '--no-zygote',
+        '--single-process',
+      ],
     });
 
     const page = await browser.newPage();
@@ -76,11 +81,10 @@ async function scrapePosts() {
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
     );
 
-    // Block only fonts/video — allow images so we can capture their URLs
+    // Block fonts/video to speed up — keep images so we get photo URLs
     await page.setRequestInterception(true);
     page.on('request', req => {
-      const t = req.resourceType();
-      if (['font', 'media'].includes(t)) req.abort();
+      if (['font', 'media'].includes(req.resourceType())) req.abort();
       else req.continue();
     });
 
@@ -90,10 +94,9 @@ async function scrapePosts() {
     // Scroll a few times to load more posts
     for (let i = 0; i < 5; i++) {
       await page.evaluate(() => window.scrollBy(0, window.innerHeight * 3));
-      await new Promise(r => setTimeout(r, 3000));
+      await new Promise(r => setTimeout(r, 2500));
     }
 
-    // Extract posts
     const rawPosts = await page.evaluate(() => {
       const articles = document.querySelectorAll('[role="article"]');
       const results  = [];
@@ -103,47 +106,45 @@ async function scrapePosts() {
         const textEl = el.querySelector('[data-testid="post_message"], div[dir="auto"]');
         let text = textEl?.innerText?.trim() || '';
         if (!text) {
-          const lines = el.innerText?.split('\n') || [];
-          text = lines
-            .filter(t => t && t.length > 10 && !/^(Like|Comment|Share|Follow|More)/i.test(t))
+          text = [...el.innerText.split('\n')]
+            .filter(t => t.trim().length > 10 && !/^(Like|Comment|Share|Follow|More)/i.test(t.trim()))
             .join('\n');
         }
 
         // Image
         let image = '';
-        const imgEl = el.querySelector('img[src]:not([src*="emoji"]):not([src*="static"])');
-        if (imgEl) image = imgEl.getAttribute('src') || '';
-
-        // Video detection — grab poster thumbnail + the Facebook post link for embedding
-        let videoUrl = '';
-        let hasVideo = false;
-        const videoEl = el.querySelector('video');
-        if (videoEl) {
-          hasVideo = true;
-          image = videoEl.getAttribute('poster') || image;
-        }
-
-        // Get the Facebook post permalink (used for video embedding)
-        let postUrl = '';
-        const linkEls = el.querySelectorAll('a[href*="/posts/"], a[href*="?v="], a[href*="/videos/"]');
-        for (const a of linkEls) {
-          const href = a.getAttribute('href') || '';
-          if (href.includes('/posts/') || href.includes('/videos/') || href.includes('?v=')) {
-            postUrl = href.startsWith('http') ? href : 'https://www.facebook.com' + href;
+        for (const img of el.querySelectorAll('img')) {
+          const src = img.src || img.getAttribute('src') || '';
+          if (src && !src.includes('emoji') && !src.includes('static') && src.startsWith('http')) {
+            image = src;
             break;
           }
         }
 
-        // Timestamp
-        let published = Date.now();
-        const timeEl = el.querySelector('a[role="link"] abbr, abbr[data-utime]');
-        if (timeEl) {
-          const utime = timeEl.getAttribute('data-utime');
-          if (utime) published = parseInt(utime) * 1000;
+        // Video
+        let hasVideo = false;
+        let postUrl  = '';
+        const videoEl = el.querySelector('video');
+        if (videoEl) {
+          hasVideo = true;
+          image = image || videoEl.getAttribute('poster') || '';
         }
 
-        // Stable ID
-        const id = 'fb_' + idx + '_' + btoa(encodeURIComponent((text || image).slice(0, 40))).replace(/[^a-z0-9]/gi, '').slice(0, 16);
+        // Post link (for video embedding)
+        for (const a of el.querySelectorAll('a[href]')) {
+          const href = a.href || '';
+          if (/\/(posts|videos)\/|[?&]v=/.test(href)) {
+            postUrl = href;
+            break;
+          }
+        }
+
+        // Timestamp via abbr[data-utime]
+        let published = Date.now();
+        const abbr = el.querySelector('abbr[data-utime]');
+        if (abbr) published = parseInt(abbr.dataset.utime) * 1000;
+
+        const id = 'fb_' + idx + '_' + btoa(encodeURIComponent((text || image).slice(0, 30))).replace(/[^a-z0-9]/gi, '').slice(0, 14);
 
         if (text || image || hasVideo) {
           results.push({ id, text, image, published, hasVideo, postUrl });
@@ -154,10 +155,12 @@ async function scrapePosts() {
     });
 
     console.log(`[Scraper] Found ${rawPosts.length} posts on page`);
+    if (rawPosts.length > 0) {
+      console.log('[Scraper] Sample image:', rawPosts[0]?.image || '(none)');
+    }
 
     if (rawPosts.length === 0) return [];
 
-    // Deduplicate against existing
     const existing    = loadPosts();
     const existingIds = new Set(existing.map(p => String(p.id)));
     const newRaw      = rawPosts.filter(p => !existingIds.has(String(p.id)));

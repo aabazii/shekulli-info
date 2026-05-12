@@ -51,7 +51,8 @@ function postToArticle(post) {
     .trim();
 
   const lines      = cleaned.split('\n').map(l => l.trim()).filter(Boolean);
-  const title      = lines[0]?.slice(0, 140) || '(pa titull)';
+  // For photo/video posts with no text, use a placeholder title
+  const title      = lines[0]?.slice(0, 140) || (post.image ? '📷 Foto nga Shekulli.info' : '(pa titull)');
   const rest       = lines.slice(1).join('\n').trim();
   const standfirst = rest.slice(0, 300);
   const category   = guessCategory(post.text);
@@ -158,13 +159,42 @@ async function scrapePosts() {
     const items = await itemsRes.json();
     console.log(`[Scraper] Got ${items.length} posts from Apify`);
 
-    // Convert items to our format
+    // Log the first item's keys so we can see exactly what Apify returns
+    if (items.length > 0) {
+      const sample = items[0];
+      console.log('[Scraper] Sample item keys:', Object.keys(sample).join(', '));
+      console.log('[Scraper] Sample media field:', JSON.stringify(sample.media || sample.images || sample.attachments || null));
+      console.log('[Scraper] Sample video field:', JSON.stringify(sample.video || sample.videoUrl || null));
+    }
+
+    // Helper: extract best available image/video thumbnail from an Apify item
+    function extractMedia(item) {
+      // Try every known field Apify uses across actor versions
+      if (item.media && item.media.length > 0) {
+        const m = item.media[0];
+        return m.src || m.url || m.thumbnail || '';
+      }
+      if (item.images && item.images.length > 0) {
+        return item.images[0].src || item.images[0].url || item.images[0] || '';
+      }
+      if (item.attachments && item.attachments.length > 0) {
+        const a = item.attachments[0];
+        return a.src || a.url || a.image || a.thumbnail || '';
+      }
+      if (item.videoUrl) return item.videoUrl;
+      if (item.video) return typeof item.video === 'string' ? item.video : (item.video.src || item.video.url || '');
+      if (item.imageUrl) return item.imageUrl;
+      if (item.image) return typeof item.image === 'string' ? item.image : '';
+      return '';
+    }
+
+    // Convert items to our format — include posts even if they have no text (photo/video posts)
     const rawPosts = items
-      .filter(item => item.text)
+      .filter(item => item.text || extractMedia(item)) // keep photo/video-only posts too
       .map(item => ({
         id: item.postId || item.facebookId || 'post_' + Math.random().toString(36).slice(2),
-        text: item.text,
-        image: item.media?.[0]?.src || '',
+        text: item.text || '',
+        image: extractMedia(item),
         timestamp: (() => {
           if (!item.timestamp) return Date.now();
           const t = new Date(item.timestamp).getTime();

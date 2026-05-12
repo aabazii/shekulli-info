@@ -1,6 +1,6 @@
 # 🗞️ Shekulli.info
 
-A news aggregation website for Shekulli (The Age), scraping posts from a Facebook page and displaying them on a modern web interface.
+A news aggregation website for Shekulli, scraping posts from a Facebook page and displaying them on a modern web interface.
 
 **Live at:** https://shekulli-info.onrender.com
 

@@ -52,9 +52,15 @@ function refreshFromAPI(onDone) {
         published:  Number(r.published),
       }));
 
-      // Always save the latest server state (handles deletes + new posts)
+      // Save and notify only if content actually changed
+      const existing = _load() || [];
+      const existingIds = new Set(existing.map(a => String(a.id)));
+      const serverIds  = new Set(normalised.map(a => String(a.id)));
+      const changed = normalised.length !== existing.length ||
+                      normalised.some(a => !existingIds.has(String(a.id))) ||
+                      existing.some(a => !serverIds.has(String(a.id)));
       _save(normalised);
-      if (typeof onDone === 'function') onDone(normalised);
+      if (changed && typeof onDone === 'function') onDone(normalised);
     })
     .catch(() => { /* backend not running — use whatever is in localStorage */ });
 }

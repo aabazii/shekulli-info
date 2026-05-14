@@ -30,10 +30,9 @@ function refreshFromAPI(onDone) {
     .then(rows => {
       if (!Array.isArray(rows)) return;
 
-      // If server returned 0, clear local cache too
+      // If server returned 0, clear local cache but do NOT trigger reload
       if (rows.length === 0) {
         _save([]);
-        if (typeof onDone === 'function') onDone([]);
         return;
       }
 

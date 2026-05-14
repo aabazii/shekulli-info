@@ -6,6 +6,9 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Shekulli.info</title>
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="colors_and_type.css">
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -15,8 +18,6 @@
   <header class="masthead">
     <div class="masthead__top">
       <div class="masthead__left" style="gap:8px;">
-        <a href="/" class="masthead__brand" aria-label="Shekulli.info"><img class="masthead__logo" src="assets/logo.png"
-            alt="Shekulli.info"></a>
         <button class="icon-btn" type="button" data-action="menu" aria-label="Menu" aria-expanded="false"><svg
             width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
             <path d="M3 6h18M3 12h18M3 18h18" />
@@ -27,9 +28,12 @@
             <path d="m20 20-3-3" />
           </svg></button>
       </div>
-      <div class="masthead__right">
-      </div>
+      <a href="/" class="masthead__brand" aria-label="Shekulli.info" style="text-decoration:none;justify-content:center;">
+        <span style="font-family:'Playfair Display',serif;font-weight:900;font-size:38px;color:#ffffff;letter-spacing:-0.02em;line-height:1;">Shekulli</span><span style="display:inline-flex;align-items:center;gap:3px;"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#ffffff;margin:0 2px 3px;"></span><span style="font-family:'Inter',sans-serif;font-weight:500;font-size:18px;color:#ffffff;">info</span></span>
+      </a>
+      <div class="masthead__right"></div>
     </div>
+    <div class="masthead__tagline">INFORMOHU I PARI ME LAJMIN E FUNDIT</div>
     <nav class="masthead__nav">
       <a class="masthead__nav-item" href="/">Kryefaqja</a>
       <a class="masthead__nav-item" href="category?cat=Politikë">Politikë</a>

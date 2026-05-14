@@ -16,14 +16,18 @@ module.exports = async function handler(req, res) {
   if (!id) return res.status(400).json({ ok: false, message: 'Missing ?id=' });
 
   try {
+    // Remove from posts list
     const posts = (await kv.get('posts')) || [];
     const filtered = posts.filter(p => String(p.id) !== String(id));
+    await kv.set('posts', filtered);
 
-    if (filtered.length === posts.length) {
-      return res.status(404).json({ ok: false, message: 'Post not found' });
+    // Add to permanent blocklist so scraper never re-adds it
+    const blocklist = (await kv.get('deleted_ids')) || [];
+    if (!blocklist.includes(String(id))) {
+      blocklist.push(String(id));
+      await kv.set('deleted_ids', blocklist);
     }
 
-    await kv.set('posts', filtered);
     res.json({ ok: true, message: `Deleted post ${id}. ${filtered.length} posts remaining.` });
   } catch (err) {
     res.status(500).json({ ok: false, message: err.message });

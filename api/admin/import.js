@@ -66,8 +66,11 @@ module.exports = async function handler(req, res) {
     });
 
     const existing    = (await kv.get('posts')) || [];
+    const blocklist   = new Set((await kv.get('deleted_ids')) || []);
     const existingIds = new Set(existing.map(p => String(p.id)));
-    const newPosts    = validated.filter(p => !existingIds.has(p.id));
+
+    // Skip posts that already exist OR were previously deleted by admin
+    const newPosts = validated.filter(p => !existingIds.has(p.id) && !blocklist.has(p.id));
 
     if (newPosts.length === 0) return res.json({ ok: true, message: 'No new posts (all duplicates)' });
 

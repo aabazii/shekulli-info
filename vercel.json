@@ -1,10 +1,12 @@
 {
+  "buildCommand": null,
+  "outputDirectory": ".",
+  "installCommand": "npm install",
   "cleanUrls": true,
   "rewrites": [
-    { "source": "/api/articles",       "destination": "/api/articles" },
-    { "source": "/api/health",         "destination": "/api/health" },
-    { "source": "/api/admin/import",   "destination": "/api/admin/import" },
-    { "source": "/api/admin/sync",     "destination": "/api/admin/sync" },
+    { "source": "/api/articles",             "destination": "/api/articles" },
+    { "source": "/api/health",               "destination": "/api/health" },
+    { "source": "/api/admin/import",         "destination": "/api/admin/import" },
     { "source": "/api/admin/fix-timestamps", "destination": "/api/admin/fix-timestamps" }
   ]
 }

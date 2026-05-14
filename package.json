@@ -1,9 +1,7 @@
 {
-  "scripts": {
-    "fb:graph": "node scripts/fetch-facebook-graph-posts.js",
-    "fb:puppeteer": "node scrape-facebook-posts.js"
-  },
+  "name": "shekulli-info",
+  "version": "1.0.0",
   "dependencies": {
-    "puppeteer": "^24.43.1"
+    "@vercel/kv": "^3.0.0"
   }
 }

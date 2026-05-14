@@ -1,9 +1,14 @@
 node_modules/
-*.env
 .env
+.env.local
+.env*.local
 posts.json
 scraped_posts.json
 facebook-debug.*
 debug-facebook.js
-db.js
-setup.sh
+login.html
+server/fb-auth.json
+server/fb-session.json
+server/posts.json
+server/debug/
+.vercel

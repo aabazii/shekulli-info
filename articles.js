@@ -28,7 +28,15 @@ function refreshFromAPI(onDone) {
   fetch(API_BASE + '/articles?limit=100')
     .then(r => r.ok ? r.json() : Promise.reject(r.status))
     .then(rows => {
-      if (!Array.isArray(rows) || rows.length === 0) return;
+      if (!Array.isArray(rows)) return;
+
+      // If server returned 0, clear local cache too
+      if (rows.length === 0) {
+        _save([]);
+        if (typeof onDone === 'function') onDone([]);
+        return;
+      }
+
       const normalised = rows.map(r => ({
         id:         r.id,
         fb_post_id: r.fb_post_id,
@@ -38,16 +46,13 @@ function refreshFromAPI(onDone) {
         standfirst: r.standfirst || '',
         body:       r.body       || '',
         photo:      r.photo      || '',
+        hasVideo:   r.hasVideo   || false,
+        postUrl:    r.postUrl    || '',
         author:     r.author     || 'Shekulli.info',
         published:  Number(r.published),
       }));
 
-      // Only reload if there are genuinely new articles we don't already have
-      const existing = _load() || [];
-      const existingIds = new Set(existing.map(a => String(a.id)));
-      const hasNew = normalised.some(a => !existingIds.has(String(a.id)));
-      if (!hasNew) return;
-
+      // Always save the latest server state (handles deletes + new posts)
       _save(normalised);
       if (typeof onDone === 'function') onDone(normalised);
     })

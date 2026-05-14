@@ -162,7 +162,15 @@ async function scrape() {
     console.log(`[${ts}] 🌐 Loading Facebook page…`);
     // Use domcontentloaded — networkidle2 can hang on FB's live connections
     await page.goto(FB_PAGE, { waitUntil: 'domcontentloaded', timeout: 60000 });
-    await new Promise(r => setTimeout(r, 4000)); // let JS render the feed
+
+    // Wait until at least one article appears (or 12s max)
+    try {
+      await page.waitForSelector('[role="article"]', { timeout: 12000 });
+      console.log(`[${ts}] ✅ Feed articles appeared`);
+    } catch {
+      console.log(`[${ts}] ⚠️  No articles found after 12s — may not be logged in`);
+    }
+    await new Promise(r => setTimeout(r, 3000)); // extra render time
 
     // Dismiss any cookie-consent / login-redirect overlays
     const currentUrl = page.url();
@@ -350,29 +358,41 @@ async function scrape() {
           btoa(encodeURIComponent(seed)).replace(/[^a-z0-9]/gi, '').slice(0, 16);
 
         // ── QUALITY GATE ──────────────────────────────────────────────────
-        // image/video post needs 60+ chars; text-only needs 200+ chars.
         const hasMedia = !!(image || hasVideo);
-        if ((hasMedia && text.length >= 60) || text.length >= 200) {
-          results.push({ id, text, image, published, hasVideo, postUrl });
-        }
+        const passes = (hasMedia && text.length >= 60) || text.length >= 200;
+        // Debug every shekulli-authored article so we can see what passes/fails
+        results.push({ id, text, image, published, hasVideo, postUrl, _passes: passes, _textLen: text.length, _hasMedia: hasMedia });
       });
 
       return results;
     });
 
-    console.log(`[${ts}] 📦 Found ${raw.length} posts`);
-    if (raw.length === 0) {
-      console.log(`[${ts}] ⚠️  0 posts — session may have expired. Run: node server/save-session.js`);
+    // Log debug info for every candidate, then filter
+    raw.forEach((p, i) => {
+      console.log(`[${ts}] 📝 [${i}] passes:${p._passes} | textLen:${p._textLen} | hasMedia:${p._hasMedia} | "${(p.text||'').slice(0,80).replace(/\n/g,' ')}"`);
+    });
+    const goodPosts = raw.filter(p => p._passes);
+    // Clean debug fields
+    goodPosts.forEach(p => { delete p._passes; delete p._textLen; delete p._hasMedia; });
+
+    const totalCandidates = raw.length;
+    console.log(`[${ts}] 📦 Found ${goodPosts.length} posts (${totalCandidates} candidates)`);
+    if (totalCandidates === 0) {
+      console.log(`[${ts}] ⚠️  0 articles — session may have expired. Run: node server/save-session.js`);
+      return;
+    }
+    if (goodPosts.length === 0) {
+      console.log(`[${ts}] ⚠️  0 posts passed quality gate — check debug lines above`);
       return;
     }
 
-    const withImg   = raw.filter(p => p.image).length;
-    const withVideo = raw.filter(p => p.hasVideo).length;
-    console.log(`[${ts}] 🖼  ${withImg}/${raw.length} have images  📹 ${withVideo} videos`);
+    const withImg   = goodPosts.filter(p => p.image).length;
+    const withVideo = goodPosts.filter(p => p.hasVideo).length;
+    console.log(`[${ts}] 🖼  ${withImg}/${goodPosts.length} have images  📹 ${withVideo} videos`);
 
     // ── Mirror images → Vercel Blob (permanent URLs, no FB expiry) ────────
     console.log(`[${ts}] ☁️  Mirroring images to Vercel Blob…`);
-    for (const p of raw) {
+    for (const p of goodPosts) {
       if (p.image) {
         const mirrored = await mirrorImage(page, p.image, p.published);
         if (mirrored !== p.image) {
@@ -383,7 +403,7 @@ async function scrape() {
     }
 
     // ── Map raw posts → article objects ───────────────────────────────────
-    const posts = raw.map(p => {
+    const posts = goodPosts.map(p => {
       const cat   = guessCategory(p.text);
       const lines = (p.text || '').split('\n').map(l => l.trim()).filter(Boolean);
       const title = lines[0]?.slice(0, 140) || (p.hasVideo ? '📹 Video nga Shekulli.info' : p.image ? '📷 Foto nga Shekulli.info' : '(pa titull)');

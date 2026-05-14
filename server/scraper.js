@@ -7,8 +7,16 @@ const puppeteer = require('puppeteer');
 const fs        = require('fs');
 const path      = require('path');
 
-const POSTS_FILE = path.join(__dirname, 'posts.json');
-const FB_PAGE    = 'https://www.facebook.com/shekulliinfo';
+const POSTS_FILE   = path.join(__dirname, 'posts.json');
+const SESSION_FILE = path.join(__dirname, 'fb-session.json');
+const FB_PAGE      = 'https://www.facebook.com/shekulliinfo';
+
+function loadSession() {
+  try {
+    const s = JSON.parse(fs.readFileSync(SESSION_FILE, 'utf8'));
+    return s.cookies || [];
+  } catch { return []; }
+}
 
 function loadPosts() {
   try { return JSON.parse(fs.readFileSync(POSTS_FILE, 'utf8')); }
@@ -80,6 +88,15 @@ async function scrapePosts() {
     await page.setUserAgent(
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
     );
+
+    // Inject saved Facebook session cookies (if available)
+    const cookies = loadSession();
+    if (cookies.length > 0) {
+      await page.setCookie(...cookies);
+      console.log(`[Scraper] Loaded ${cookies.length} session cookies`);
+    } else {
+      console.log('[Scraper] No session found — scraping as guest. Run: node save-session.js');
+    }
 
     // Block fonts/video to speed up — keep images so we get photo URLs
     await page.setRequestInterception(true);

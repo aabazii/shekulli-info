@@ -193,8 +193,11 @@ async function pushPosts(posts) {
     await page.setUserAgent('Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1');
 
     const cookies = loadSession();
-    if (cookies.length) { await page.setCookie(...cookies); console.log(`🍪 Loaded ${cookies.length} cookies`); }
-    else { console.log('⚠️  No session file — run: node server/save-session.js'); process.exit(1); }
+    if (!cookies.length) { console.log('⚠️  No session file — run: node server/save-session.js'); process.exit(1); }
+    // Normalize domains so cookies work on both www. and m.facebook.com
+    const mobileCookies = cookies.map(c => ({ ...c, domain: '.facebook.com' }));
+    await page.setCookie(...mobileCookies);
+    console.log(`🍪 Loaded ${mobileCookies.length} cookies (domain=.facebook.com)`);
 
     await page.setRequestInterception(true);
     page.on('request', req => {

@@ -1,8 +1,8 @@
-import { kv } from '@vercel/kv';
+const { kv } = require('@vercel/kv');
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'shekulli2026';
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
   const token = (req.headers.authorization || '').replace('Bearer ', '');
   if (token !== ADMIN_PASSWORD) return res.status(401).json({ ok: false });
@@ -14,4 +14,4 @@ export default async function handler(req, res) {
   }));
   await kv.set('posts', fixed);
   res.json({ ok: true, message: `Fixed ${fixed.length} posts` });
-}
+};

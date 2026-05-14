@@ -167,10 +167,13 @@
       );
 
       tickerWrap.appendChild(track);
-      // Adjust speed based on content width for consistent scroll rate
-      const totalW = track.scrollWidth;
-      const speed = Math.max(20, totalW / 80); // ~80px/s
-      track.style.animationDuration = speed + 's';
+      // Measure one set's pixel width after render, set exact scroll distance
+      requestAnimationFrame(() => {
+        const halfW = track.scrollWidth / 2;
+        const speed = Math.max(15, halfW / 100); // ~100px/s
+        track.style.setProperty('--ticker-dist', `-${halfW}px`);
+        track.style.animationDuration = speed + 's';
+      });
 
       /* Most-read rail */
       const mostRead = document.getElementById('most-read');

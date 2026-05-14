@@ -1,9 +1,9 @@
-# Server
-server/node_modules/
-server/.env
-server/posts.json
-server/fb-auth.json
-server/debug/
-
-# OS
-.DS_Store
+node_modules/
+*.env
+.env
+posts.json
+scraped_posts.json
+facebook-debug.*
+debug-facebook.js
+db.js
+setup.sh

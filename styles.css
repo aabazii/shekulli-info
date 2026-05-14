@@ -375,6 +375,11 @@ ol {
   margin-right: 5px;
 }
 
+@keyframes pulse {
+  0%,100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: .4; transform: scale(.7); }
+}
+
 /* ============================================================
    Section strip & rail
    ============================================================ */

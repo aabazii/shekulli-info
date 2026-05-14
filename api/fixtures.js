@@ -27,18 +27,35 @@ module.exports = async function handler(req, res) {
       { headers: { 'X-Auth-Token': apiKey } }
     );
     const data = await r.json();
-    const matches = (data.matches || []).map(m => ({
-      id:         m.id,
-      league:     LEAGUE_NAMES[m.competition?.code] || m.competition?.name || '',
-      leagueCode: m.competition?.code || '',
-      home:       m.homeTeam?.shortName || m.homeTeam?.name || '?',
-      away:       m.awayTeam?.shortName || m.awayTeam?.name || '?',
-      status:     m.status, // SCHEDULED, LIVE, IN_PLAY, PAUSED, FINISHED, etc.
-      homeScore:  m.score?.fullTime?.home ?? m.score?.halfTime?.home ?? null,
-      awayScore:  m.score?.fullTime?.away ?? m.score?.halfTime?.away ?? null,
-      utcDate:    m.utcDate,
-      minute:     m.minute || null,
-    }));
+    const matches = (data.matches || []).map(m => {
+      const isLive = ['IN_PLAY', 'PAUSED', 'LIVE'].includes(m.status);
+      // In v4 the live minute is at m.minute; score during play is regularTime
+      const homeScore = isLive
+        ? (m.score?.regularTime?.home ?? m.score?.halfTime?.home ?? m.score?.fullTime?.home ?? null)
+        : (m.score?.fullTime?.home ?? m.score?.halfTime?.home ?? null);
+      const awayScore = isLive
+        ? (m.score?.regularTime?.away ?? m.score?.halfTime?.away ?? m.score?.fullTime?.away ?? null)
+        : (m.score?.fullTime?.away ?? m.score?.halfTime?.away ?? null);
+
+      return {
+        id:         m.id,
+        league:     LEAGUE_NAMES[m.competition?.code] || m.competition?.name || '',
+        leagueCode: m.competition?.code || '',
+        home:       m.homeTeam?.shortName || m.homeTeam?.name || '?',
+        away:       m.awayTeam?.shortName || m.awayTeam?.name || '?',
+        status:     m.status,
+        homeScore,
+        awayScore,
+        utcDate:    m.utcDate,
+        minute:     m.minute ?? null,  // live elapsed minute from API
+      };
+    });
+
+    // Use a shorter cache when games are live so minute ticks update
+    const anyLive = matches.some(m => ['IN_PLAY', 'PAUSED', 'LIVE'].includes(m.status));
+    res.setHeader('Cache-Control', anyLive
+      ? 's-maxage=30, stale-while-revalidate=30'
+      : 's-maxage=60, stale-while-revalidate=120');
 
     res.json({ matches });
   } catch (err) {

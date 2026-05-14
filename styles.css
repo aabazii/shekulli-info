@@ -61,8 +61,7 @@ ol {
   position: sticky;
   top: 0;
   z-index: 50;
-  background: #1456C7;
-  color: #ffffff;
+  background: var(--paper);
 }
 
 .masthead__top {
@@ -137,7 +136,7 @@ ol {
   font-family: var(--font-sans);
   font-size: 10px;
   font-weight: 600;
-  color: rgba(255,255,255,0.75);
+  color: #7ab3e8;
   letter-spacing: 0.22em;
   text-transform: uppercase;
   padding: 0 0 10px;
@@ -150,7 +149,7 @@ ol {
   display: flex;
   justify-content: center;
   gap: 0;
-  border-top: 1px solid rgba(255,255,255,0.2);
+  border-top: 1px solid var(--rule);
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -165,7 +164,7 @@ ol {
   font-family: var(--font-sans);
   font-size: 13px;
   font-weight: 600;
-  color: rgba(255,255,255,0.85);
+  color: #7ab3e8;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   white-space: nowrap;
@@ -175,12 +174,12 @@ ol {
 }
 
 .masthead__nav-item:hover {
-  color: #ffffff;
+  color: #4a90d9;
 }
 
 .masthead__nav-item.is-active {
-  color: #ffffff;
-  border-bottom-color: #ffffff;
+  color: #4a90d9;
+  border-bottom-color: #4a90d9;
 }
 
 /* ============================================================

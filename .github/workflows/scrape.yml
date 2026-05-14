@@ -1,0 +1,32 @@
+name: Scrape Facebook Posts
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'   # every 5 minutes (GitHub minimum)
+  workflow_dispatch:          # manual trigger from GitHub UI
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4        # kill if it hangs
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install scraper dependencies
+        run: cd server && npm install
+
+      - name: Write Facebook session cookies
+        run: echo '${{ secrets.FB_SESSION }}' > server/fb-session.json
+
+      - name: Run scraper
+        env:
+          VERCEL_URL: https://shekulli.vercel.app
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+        run: node server/run-scraper.js

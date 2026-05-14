@@ -208,17 +208,22 @@ async function scrape() {
       await new Promise(r => setTimeout(r, 1500));
     } catch {}
 
-    // Expand all truncated posts ("Shiko më shumë" / "See more")
+    // Expand ALL truncated posts — click every "See more" / "Shiko më shumë"
+    // Use a broad contains-match so we catch partial/translated variants
     console.log(`[${ts}] 👆 Expanding truncated posts…`);
-    await page.evaluate(() => {
-      document.querySelectorAll('[role="button"]').forEach(btn => {
-        const txt = (btn.innerText || '').trim();
-        if (/^(Shiko më shumë|See more|See More)$/.test(txt)) {
-          try { btn.click(); } catch {}
+    const expanded = await page.evaluate(() => {
+      let count = 0;
+      // Target both [role="button"] and plain <div>/<span> that act as expand buttons
+      document.querySelectorAll('[role="button"], div[tabindex="0"], span[role="button"]').forEach(btn => {
+        const txt = (btn.innerText || btn.textContent || '').trim();
+        if (/shiko\s*më\s*shumë|see\s*more/i.test(txt) && txt.length < 30) {
+          try { btn.click(); count++; } catch {}
         }
       });
+      return count;
     });
-    await new Promise(r => setTimeout(r, 2000));
+    console.log(`[${ts}] 👆 Clicked ${expanded} expand button(s)`);
+    await new Promise(r => setTimeout(r, 3000)); // wait for text to fully render
 
     // Count total articles visible on page
     const totalArticles = await page.evaluate(() =>
@@ -398,17 +403,34 @@ async function scrape() {
 
     // ── Map raw posts → article objects ───────────────────────────────────
     const posts = goodPosts.map(p => {
-      const cat   = guessCategory(p.text);
-      const lines = (p.text || '').split('\n').map(l => l.trim()).filter(Boolean);
-      const title = lines[0]?.slice(0, 140) || (p.hasVideo ? '📹 Video nga Shekulli.info' : p.image ? '📷 Foto nga Shekulli.info' : '(pa titull)');
-      const rest  = lines.slice(1).join('\n').trim();
+      const cat = guessCategory(p.text);
+
+      // Clean any leftover "See more" / "Shiko më shumë" from text
+      const cleanText = (p.text || '')
+        .replace(/\.{3,}\s*(See more|Shiko më shumë)\s*/gi, '')
+        .replace(/\s*(See more|Shiko më shumë)\s*/gi, ' ')
+        .trim();
+
+      const lines = cleanText.split('\n').map(l => l.trim()).filter(Boolean);
+
+      // Title: first non-empty line, max 140 chars
+      let title = lines[0]?.slice(0, 140) || '';
+      if (!title) title = p.hasVideo ? '📹 Video nga Shekulli.info' : p.image ? '📷 Foto nga Shekulli.info' : '(pa titull)';
+
+      // Body: everything after the first line
+      const body = lines.slice(1).join('\n').trim();
+
+      // Standfirst: first 2 sentences of body, or first body line (not a copy of title)
+      const bodyLines = body.split('\n').filter(Boolean);
+      const standfirst = bodyLines.slice(0, 2).join(' ').slice(0, 300) || '';
+
       return {
         id:         p.id,
         category:   cat,
         kicker:     cat.toUpperCase(),
         title,
-        standfirst: rest.slice(0, 300),
-        body:       rest,
+        standfirst,
+        body,
         photo:      p.image  || '',
         hasVideo:   p.hasVideo,
         postUrl:    p.postUrl || '',

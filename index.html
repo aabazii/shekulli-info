@@ -18,9 +18,6 @@
   <header class="masthead">
     <div class="masthead__top">
       <div class="masthead__left" style="gap:8px;">
-        <a href="/" class="masthead__brand" aria-label="Shekulli.info" style="text-decoration:none;">
-          <span style="font-family:'Playfair Display',serif;font-weight:900;font-size:28px;color:var(--ink-1);letter-spacing:-0.01em;line-height:1;">Shekulli</span><span style="display:inline-flex;align-items:center;gap:3px;"><span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:#1456C7;margin:0 1px 2px;"></span><span style="font-family:'Inter',sans-serif;font-weight:500;font-size:14px;color:var(--ink-1);">info</span></span>
-        </a>
         <button class="icon-btn" type="button" data-action="menu" aria-label="Menu" aria-expanded="false"><svg
             width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
             <path d="M3 6h18M3 12h18M3 18h18" />
@@ -31,9 +28,10 @@
             <path d="m20 20-3-3" />
           </svg></button>
       </div>
-      <div class="masthead__right">
-        <span class="masthead__date" id="today-date"></span>
-      </div>
+      <a href="/" class="masthead__brand" aria-label="Shekulli.info" style="text-decoration:none;justify-content:center;">
+        <span style="font-family:'Playfair Display',serif;font-weight:900;font-size:38px;color:var(--ink-1);letter-spacing:-0.02em;line-height:1;">Shekulli</span><span style="display:inline-flex;align-items:center;gap:3px;"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#1456C7;margin:0 2px 3px;"></span><span style="font-family:'Inter',sans-serif;font-weight:500;font-size:18px;color:var(--ink-1);">info</span></span>
+      </a>
+      <div class="masthead__right"></div>
     </div>
     <div class="masthead__tagline">INFORMOHU I PARI ME LAJMIN E FUNDIT</div>
     <nav class="masthead__nav">
@@ -113,10 +111,6 @@
     try {
       const { getArticles, getArticlesByCategory, timeAgo, buildCard } = window.ShekullDB;
 
-      /* Date in header */
-      document.getElementById('today-date').textContent = new Date().toLocaleDateString('sq-AL', {
-        weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
-      });
 
       const all = getArticles();
       const main = document.getElementById('main-content');

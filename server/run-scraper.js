@@ -212,6 +212,23 @@ async function scrape() {
     });
     await new Promise(r => setTimeout(r, 2000));
 
+    // ── Debug: how many articles on page, and what do they look like? ────
+    const debugInfo = await page.evaluate(() => {
+      const articles = document.querySelectorAll('[role="article"]');
+      return {
+        total: articles.length,
+        sample: Array.from(articles).slice(0, 3).map(el => ({
+          textSnippet: (el.innerText || '').slice(0, 120).replace(/\n/g, ' '),
+          hasShekull: /shekulli/i.test(el.innerHTML),
+          htmlSnippet: el.innerHTML.slice(0, 200),
+        })),
+      };
+    });
+    console.log(`[${ts}] 🔍 Articles on page: ${debugInfo.total}`);
+    debugInfo.sample.forEach((s, i) =>
+      console.log(`[${ts}]   [${i}] hasShekull:${s.hasShekull} | "${s.textSnippet}"`)
+    );
+
     // ── Extract posts ───────────────────────────────────────────────────────
     const raw = await page.evaluate(() => {
       const results = [];
@@ -222,12 +239,10 @@ async function scrape() {
       document.querySelectorAll('[role="article"]').forEach((el, idx) => {
 
         // ── KEY FILTER: only accept posts AUTHORED by the page ───────────
-        // Every real Shekulli.info post has a link to "shekulliinfo" in its
+        // Every real Shekulli.info post has a link to "shekulli" in its
         // header (the page-name anchor). Random commenter articles do NOT.
-        // This is the single most reliable way to distinguish page posts
-        // from comments, regardless of how Facebook nests the DOM.
         const html = el.innerHTML || '';
-        if (!/shekulliinfo/i.test(html)) return;
+        if (!/shekulli/i.test(html)) return;
 
         // Also skip if this element is nested inside another [role="article"]
         // (catches comments that DO somehow reference the page name)

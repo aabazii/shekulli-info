@@ -245,7 +245,11 @@ async function scrape() {
         const id   = 'fb_' + idx + '_' +
           btoa(encodeURIComponent(seed)).replace(/[^a-z0-9]/gi, '').slice(0, 16);
 
-        if (text.length > 5 || image || hasVideo) {
+        // Only keep posts that look like real news:
+        // must have an image/video OR enough text to be a real post (>80 chars)
+        const looksReal = (image || hasVideo) && text.length > 15;
+        const longEnough = text.length > 80;
+        if (looksReal || longEnough) {
           results.push({ id, text, image, published, hasVideo, postUrl });
         }
       });

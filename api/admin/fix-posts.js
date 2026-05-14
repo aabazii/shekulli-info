@@ -1,17 +1,25 @@
 /**
- * One-shot endpoint: strip "See more" / "Shiko më shumë" and trailing
- * ellipsis from all post titles and standfirsts in KV.
+ * One-shot endpoint: strip "See more" / "Shiko më shumë" / "Comment" / "Like" / "Share"
+ * and trailing ellipsis from all post titles, standfirsts and bodies in KV.
  * POST /api/admin/fix-posts   (auth required)
  */
 const { kv } = require('@vercel/kv');
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'shekulli2026';
 
+const JUNK = 'See more|Shiko më shumë|Comment|Like|Share|Koment|Pëlqej|Shpërnda';
+
 function clean(str) {
   return (str || '')
-    .replace(/\.{2,}\s*(See more|Shiko më shumë)[^a-zA-ZëäöüÄÖÜ]*/gi, '')
-    .replace(/\s*(See more|Shiko më shumë)\s*/gi, ' ')
-    .replace(/\.{2,}\s*$/, '')
+    // "...See more" or "… Comment" etc. at the end
+    .replace(new RegExp(`[…\\.]{1,}\\s*(${JUNK})\\s*$`, 'gi'), '…')
+    // standalone junk word at the end
+    .replace(new RegExp(`\\s*(${JUNK})\\s*$`, 'gi'), '')
+    // junk mid-string (e.g. "...See more read on")
+    .replace(new RegExp(`\\.{2,}\\s*(${JUNK})[^a-zA-ZëäöüÄÖÜ]*`, 'gi'), '')
+    .replace(new RegExp(`\\s*(${JUNK})\\s*`, 'gi'), ' ')
+    // trailing ellipsis artefact
+    .replace(/[…\.]{2,}\s*$/, '…')
     .replace(/\s{2,}/g, ' ')
     .trim();
 }

@@ -162,12 +162,21 @@ async function scrape() {
     console.log(`[${ts}] 🌐 Loading Facebook page…`);
     await page.goto(FB_PAGE, { waitUntil: 'networkidle2', timeout: 60000 });
 
+    // Scroll back to top first — newest posts are at the top of the feed
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await new Promise(r => setTimeout(r, 2000));
+
     // Slow scroll — gives lazy-loaded images time to resolve
+    // 8 passes (was 6) ensures we capture ~10-12 posts reliably
     console.log(`[${ts}] 📜 Scrolling to load posts…`);
-    for (let i = 0; i < 6; i++) {
-      await page.evaluate(() => window.scrollBy(0, window.innerHeight * 2));
-      await new Promise(r => setTimeout(r, 3000));
+    for (let i = 0; i < 8; i++) {
+      await page.evaluate(() => window.scrollBy(0, window.innerHeight * 1.5));
+      await new Promise(r => setTimeout(r, 2500));
     }
+
+    // Scroll back to top so the freshest posts are captured first
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await new Promise(r => setTimeout(r, 1500));
 
     // Expand all truncated posts ("Shiko më shumë" / "See more")
     console.log(`[${ts}] 👆 Expanding truncated posts…`);
@@ -207,13 +216,12 @@ async function scrape() {
         // ── SKIP nested articles (comments/replies) ────────────────────
         if (isNestedArticle(el)) return;
 
-        // ── Also skip if the article contains NO post-level action bar ──
-        // Real page posts always have a reactions/share bar somewhere.
-        // If the element has no link to /posts/ or /videos/ or /reel/
-        // AND no like/share buttons, it's probably UI chrome — skip it.
-        const rawHtml = el.innerHTML || '';
-        const hasPostLink = /\/(posts|videos|reel|photo|story)\//i.test(rawHtml) || /[?&]story_fbid=/i.test(rawHtml);
-        if (!hasPostLink) return;
+        // ── Skip pure UI chrome that has no meaningful text or media ─────
+        // (e.g. "Write a comment…" boxes, reaction summary rows)
+        // We do NOT require a /posts/ link — Facebook sometimes uses
+        // encoded/parameterised URLs that don't contain that word.
+        const elText = (el.innerText || '').trim();
+        if (elText.length < 20) return; // definitely not a news post
 
         // ── TEXT ──────────────────────────────────────────────────────────
         // Collect text only from the post's own dir="auto" divs.

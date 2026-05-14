@@ -149,8 +149,17 @@ async function scrape() {
       document.querySelectorAll('[role="article"]').forEach((el, idx) => {
 
         // ── TEXT ──────────────────────────────────────────────────────────
+        // Comments on Facebook are nested [role="article"] inside the post.
+        // Collect all dir="auto" nodes that belong to comments so we can skip them.
+        const commentNodes = new Set();
+        el.querySelectorAll('[role="article"]').forEach(comment => {
+          comment.querySelectorAll('div[dir="auto"]').forEach(d => commentNodes.add(d));
+        });
+
+        // Only grab text from the POST itself, not from comments
         const textParts = [];
         el.querySelectorAll('div[dir="auto"]').forEach(d => {
+          if (commentNodes.has(d)) return; // skip comment text
           const t = (d.innerText || '').trim();
           if (t.length > 5) textParts.push(t);
         });

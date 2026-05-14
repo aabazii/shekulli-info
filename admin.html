@@ -484,11 +484,22 @@
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    function removeArticle(id) {
+    async function removeArticle(id) {
       if (!confirm('Jeni i sigurt? Ky veprim nuk mund të kthehet prapa.')) return;
-      db().deleteArticle(id);
-      renderList();
-      toast('Artikulli u fshi.');
+      try {
+        const res = await fetch('/api/admin/delete?id=' + encodeURIComponent(id), {
+          method: 'DELETE',
+          headers: { 'Authorization': 'Bearer shekulli2026' }
+        });
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.message);
+        // Also remove from local cache so UI updates immediately
+        db().deleteArticle(id);
+        renderList();
+        toast('✓ Artikulli u fshi.');
+      } catch (err) {
+        toast('❌ Gabim: ' + err.message);
+      }
     }
 
     function renderList() {

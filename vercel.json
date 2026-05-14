@@ -8,6 +8,7 @@
     { "source": "/api/articles",             "destination": "/api/articles" },
     { "source": "/api/health",               "destination": "/api/health" },
     { "source": "/api/admin/import",         "destination": "/api/admin/import" },
-    { "source": "/api/admin/fix-timestamps", "destination": "/api/admin/fix-timestamps" }
+    { "source": "/api/admin/fix-timestamps", "destination": "/api/admin/fix-timestamps" },
+    { "source": "/api/admin/delete",         "destination": "/api/admin/delete" }
   ]
 }

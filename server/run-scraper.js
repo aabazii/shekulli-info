@@ -246,9 +246,9 @@ async function scrape() {
           btoa(encodeURIComponent(seed)).replace(/[^a-z0-9]/gi, '').slice(0, 16);
 
         // Only keep posts that look like real news:
-        // must have an image/video OR enough text to be a real post (>80 chars)
-        const looksReal = (image || hasVideo) && text.length > 15;
-        const longEnough = text.length > 80;
+        // must have an image/video AND 40+ chars, OR 150+ chars of text alone
+        const looksReal = (image || hasVideo) && text.length > 40;
+        const longEnough = text.length > 150;
         if (looksReal || longEnough) {
           results.push({ id, text, image, published, hasVideo, postUrl });
         }

@@ -194,61 +194,48 @@ async function scrape() {
     const raw = await page.evaluate(() => {
       const results = [];
 
-      // ── Helper: is this article element a top-level page post? ──────────
-      // Facebook nests comments as [role="article"] inside the post article.
-      // We only want the outermost ones (direct children of the feed container).
-      // Strategy: skip any [role="article"] whose closest ancestor [role="article"]
-      // is also a [role="article"] — i.e. it IS nested inside another post.
-      function isNestedArticle(el) {
-        let p = el.parentElement;
-        while (p) {
-          if (p.getAttribute && p.getAttribute('role') === 'article') return true;
-          p = p.parentElement;
-        }
-        return false;
-      }
-
-      // UI/junk line patterns to strip out
-      const JUNK_LINE = /^(Like|Comment|Share|Follow|More|Shpërnda|Koment|Pëlqej|Shiko\s|Reag|Write a|Shkruaj|Reply|Përgjigju|See\s|Translated|Shikuar|Sponsored|Reklamë|Send|Dërgo|\d+[hm]|\d+\s*(orë|min)|More reactions|Most relevant|All comments|Top comments|Previous comments|View \d|Shiko \d|Load more|Ngarko më)/i;
+      // UI/junk line patterns to strip from text
+      const JUNK_LINE = /^(Like|Comment|Share|Follow|More|Shpërnda|Koment|Pëlqej|Shiko\s|Reag|Write a|Shkruaj|Reply|Përgjigju|See\s|Translated|Shikuar|Sponsored|Reklamë|Send|Dërgo|\d+[hm]\b|\d+\s*(orë|min)|More reactions|Most relevant|All comments|Top comments|Previous|View \d|Shiko \d|Load more|Ngarko më)/i;
 
       document.querySelectorAll('[role="article"]').forEach((el, idx) => {
 
-        // ── SKIP nested articles (comments/replies) ────────────────────
-        if (isNestedArticle(el)) return;
+        // ── KEY FILTER: only accept posts AUTHORED by the page ───────────
+        // Every real Shekulli.info post has a link to "shekulliinfo" in its
+        // header (the page-name anchor). Random commenter articles do NOT.
+        // This is the single most reliable way to distinguish page posts
+        // from comments, regardless of how Facebook nests the DOM.
+        const html = el.innerHTML || '';
+        if (!/shekulliinfo/i.test(html)) return;
 
-        // ── Skip pure UI chrome that has no meaningful text or media ─────
-        // (e.g. "Write a comment…" boxes, reaction summary rows)
-        // We do NOT require a /posts/ link — Facebook sometimes uses
-        // encoded/parameterised URLs that don't contain that word.
-        const elText = (el.innerText || '').trim();
-        if (elText.length < 20) return; // definitely not a news post
+        // Also skip if this element is nested inside another [role="article"]
+        // (catches comments that DO somehow reference the page name)
+        let p = el.parentElement;
+        while (p) {
+          if (p.getAttribute && p.getAttribute('role') === 'article') return;
+          p = p.parentElement;
+        }
 
         // ── TEXT ──────────────────────────────────────────────────────────
         // Collect text only from the post's own dir="auto" divs.
-        // Exclude any div that lives inside a nested [role="article"] (comment).
+        // Exclude divs that belong to nested comment articles.
         const commentDivs = new Set();
         el.querySelectorAll('[role="article"] div[dir="auto"]').forEach(d => commentDivs.add(d));
 
         const textParts = [];
         el.querySelectorAll('div[dir="auto"]').forEach(d => {
           if (commentDivs.has(d)) return;
-          // Also skip if it's a child of a comment list container
-          const inList = d.closest('[aria-label*="omment"], [aria-label*="omento"], [data-testid*="comment"]');
-          if (inList) return;
+          const inCommentList = d.closest('[aria-label*="omment"],[aria-label*="omento"],[data-testid*="comment"]');
+          if (inCommentList) return;
           const t = (d.innerText || '').trim();
           if (t.length > 5) textParts.push(t);
         });
 
         let text = [...new Set(textParts)].join('\n').trim();
 
-        // Clean up Facebook UI artifacts
+        // Clean FB UI artifacts and junk lines
         text = text
-          .replace(/\s*Shiko më shumë\s*/gi, ' ')
-          .replace(/\s*See more\s*/gi, ' ')
-          .replace(/\s*See More\s*/gi, ' ')
+          .replace(/\s*(Shiko më shumë|See more|See More)\s*/gi, ' ')
           .trim();
-
-        // Filter out junk lines from the assembled text
         text = text.split('\n')
           .map(l => l.trim())
           .filter(l => l.length > 3 && !JUNK_LINE.test(l))
@@ -256,17 +243,25 @@ async function scrape() {
           .trim();
 
         // ── IMAGE ─────────────────────────────────────────────────────────
+        // Skip avatar/profile-picture sized images (< 120px).
+        // Only accept images that are genuinely large (news photos).
         let image = '';
 
-        // Priority 1: Facebook CDN (scontent) — highest quality real photos
         for (const img of el.querySelectorAll('img')) {
-          const src = img.src || img.getAttribute('src') || img.getAttribute('data-src') || '';
-          if (src.includes('scontent') && src.startsWith('https')) { image = src; break; }
+          const src = img.src || img.getAttribute('data-src') || '';
+          if (!src.startsWith('https') || !src.includes('scontent')) continue;
+          // Skip tiny avatars (profile pictures are typically 40–60px rendered)
+          const w = img.naturalWidth  || img.width  || 0;
+          const h = img.naturalHeight || img.height || 0;
+          if (w > 0 && w < 120) continue;
+          if (h > 0 && h < 120) continue;
+          image = src;
+          break;
         }
-        // Priority 2: any large non-icon https image
+        // Fallback: any large https image (non-icon, non-static)
         if (!image) {
           for (const img of el.querySelectorAll('img')) {
-            const src = img.src || img.getAttribute('src') || img.getAttribute('data-src') || '';
+            const src = img.src || img.getAttribute('data-src') || '';
             const w   = img.naturalWidth  || img.width  || 0;
             const h   = img.naturalHeight || img.height || 0;
             if (src.startsWith('https') &&
@@ -274,47 +269,38 @@ async function scrape() {
                 !src.includes('rsrc.php') &&
                 !src.includes('/static/') &&
                 src.length > 80 &&
-                (w === 0 || w > 80) &&
-                (h === 0 || h > 80)) {
+                (w === 0 || w > 120) &&
+                (h === 0 || h > 120)) {
               image = src; break;
             }
           }
         }
-        // Priority 3: CSS background-image
+        // CSS background-image fallback
         if (!image) {
           for (const node of el.querySelectorAll('[style*="background-image"]')) {
             const m = (node.style.backgroundImage || '').match(/url\(["']?(https[^"')]+)["']?\)/);
-            if (m && m[1] && !m[1].includes('data:')) { image = m[1]; break; }
+            if (m?.[1] && !m[1].includes('data:')) { image = m[1]; break; }
           }
         }
 
         // ── VIDEO ─────────────────────────────────────────────────────────
         let hasVideo = false;
         let postUrl  = '';
-        let videoThumb = '';
 
-        // Detect native <video> elements
         const videoEl = el.querySelector('video');
         if (videoEl) {
-          hasVideo   = true;
-          videoThumb = videoEl.getAttribute('poster') || '';
-          // Prefer poster as image if no photo found yet
-          if (!image && videoThumb) image = videoThumb;
+          hasVideo = true;
+          const poster = videoEl.getAttribute('poster') || '';
+          if (!image && poster) image = poster;
         }
 
-        // Find the FB post/video/reel URL (needed for embed)
         for (const a of el.querySelectorAll('a[href]')) {
           const href = a.href || '';
-          // Match /videos/, /reel/, /posts/, watch, fb.watch
           if (/\/(videos|reel|posts)\/|[?&]v=\d|fb\.watch/i.test(href)) {
             postUrl = href; break;
           }
         }
-
-        // If it links to a reel or video but no <video> tag yet, still flag it
-        if (!hasVideo && /\/(videos|reel)\/|fb\.watch/i.test(postUrl)) {
-          hasVideo = true;
-        }
+        if (!hasVideo && /\/(videos|reel)\/|fb\.watch/i.test(postUrl)) hasVideo = true;
 
         // ── TIMESTAMP ─────────────────────────────────────────────────────
         let published = Date.now();
@@ -322,19 +308,14 @@ async function scrape() {
         if (abbr) published = parseInt(abbr.dataset.utime) * 1000;
 
         // ── ID ────────────────────────────────────────────────────────────
-        // Stable ID: based on post content/url so reruns don't create dupes
         const seed = (postUrl || text || image).slice(0, 50);
         const id   = 'fb_' + idx + '_' +
           btoa(encodeURIComponent(seed)).replace(/[^a-z0-9]/gi, '').slice(0, 16);
 
         // ── QUALITY GATE ──────────────────────────────────────────────────
-        // Real news posts: image/video + at least 80 chars, OR text alone ≥ 200 chars.
-        // This filters out stray comments, reaction posts, and UI noise.
-        const hasMedia  = !!(image || hasVideo);
-        const looksReal = hasMedia && text.length >= 80;
-        const longText  = text.length >= 200;
-
-        if (looksReal || longText) {
+        // image/video post needs 60+ chars; text-only needs 200+ chars.
+        const hasMedia = !!(image || hasVideo);
+        if ((hasMedia && text.length >= 60) || text.length >= 200) {
           results.push({ id, text, image, published, hasVideo, postUrl });
         }
       });

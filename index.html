@@ -152,7 +152,7 @@
       // Measure one set's pixel width after render, set exact scroll distance
       requestAnimationFrame(() => {
         const halfW = track.scrollWidth / 2;
-        const speed = Math.max(15, halfW / 100); // ~100px/s
+        const speed = Math.max(30, halfW / 50); // ~50px/s
         track.style.setProperty('--ticker-dist', `-${halfW}px`);
         track.style.animationDuration = speed + 's';
       });

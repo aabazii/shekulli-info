@@ -61,7 +61,7 @@ ol {
   position: sticky;
   top: 0;
   z-index: 50;
-  background: linear-gradient(to right, #ffffff 0%, #c8deff 25%, #7aadff 50%, #c8deff 75%, #ffffff 100%);
+  background: linear-gradient(to right, #ffffff 0%, #d0ddf0 10%, #4a6fa5 38%, #4a6fa5 62%, #d0ddf0 90%, #ffffff 100%);
 }
 
 .masthead__top {

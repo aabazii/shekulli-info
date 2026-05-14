@@ -208,22 +208,23 @@ async function scrape() {
       await new Promise(r => setTimeout(r, 1500));
     } catch {}
 
-    // Expand ALL truncated posts — click every "See more" / "Shiko më shumë"
-    // Use a broad contains-match so we catch partial/translated variants
+    // Expand ALL truncated posts using real Puppeteer clicks (more reliable
+    // than in-page btn.click() which doesn't always fire in headless Chrome)
     console.log(`[${ts}] 👆 Expanding truncated posts…`);
-    const expanded = await page.evaluate(() => {
-      let count = 0;
-      // Target both [role="button"] and plain <div>/<span> that act as expand buttons
-      document.querySelectorAll('[role="button"], div[tabindex="0"], span[role="button"]').forEach(btn => {
-        const txt = (btn.innerText || btn.textContent || '').trim();
+    let expandCount = 0;
+    const expandBtns = await page.$$('[role="button"], div[tabindex="0"], span[role="button"]');
+    for (const btn of expandBtns) {
+      try {
+        const txt = await btn.evaluate(el => (el.innerText || el.textContent || '').trim());
         if (/shiko\s*më\s*shumë|see\s*more/i.test(txt) && txt.length < 30) {
-          try { btn.click(); count++; } catch {}
+          await btn.click({ delay: 30 });
+          expandCount++;
+          await new Promise(r => setTimeout(r, 400)); // small gap between clicks
         }
-      });
-      return count;
-    });
-    console.log(`[${ts}] 👆 Clicked ${expanded} expand button(s)`);
-    await new Promise(r => setTimeout(r, 3000)); // wait for text to fully render
+      } catch {}
+    }
+    console.log(`[${ts}] 👆 Clicked ${expandCount} expand button(s)`);
+    await new Promise(r => setTimeout(r, 4000)); // wait for all text to fully render
 
     // Count total articles visible on page
     const totalArticles = await page.evaluate(() =>

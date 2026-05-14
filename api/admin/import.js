@@ -65,29 +65,55 @@ module.exports = async function handler(req, res) {
       };
     });
 
-    const existing    = (await kv.get('posts')) || [];
-    const blocklist   = new Set((await kv.get('deleted_ids')) || []);
-    const existingIds = new Set(existing.map(p => String(p.id)));
+    const existing  = (await kv.get('posts')) || [];
+    const blocklist = new Set((await kv.get('deleted_ids')) || []);
 
-    // Server-side quality gate: reject short/junk posts
-    // Real news needs either (media + 80 chars) or (200+ chars of text alone)
+    // Server-side quality gate
     const quality = validated.filter(p => {
       const bodyLen = (p.body || '').length;
       const hasMedia = !!(p.photo || p.hasVideo);
-      return (hasMedia && bodyLen >= 80) || bodyLen >= 200;
+      return (hasMedia && bodyLen >= 60) || bodyLen >= 200;
     });
 
-    // Skip posts that already exist OR were previously deleted by admin
-    const newPosts = quality.filter(p => !existingIds.has(p.id) && !blocklist.has(p.id));
+    // Build a map of existing posts for quick lookup
+    const existingMap = new Map(existing.map(p => [String(p.id), p]));
 
-    if (newPosts.length === 0) return res.json({ ok: true, message: 'No new posts (all duplicates)' });
+    let addedCount = 0, updatedCount = 0;
+    const toAdd = [];
 
-    const merged = [...newPosts, ...existing]
+    for (const p of quality) {
+      if (blocklist.has(p.id)) continue; // permanently deleted — never re-add
+
+      const prev = existingMap.get(p.id);
+      if (!prev) {
+        // Brand new post
+        toAdd.push(p);
+        addedCount++;
+      } else {
+        // Already exists — update if the new body is longer (was truncated before)
+        const prevLen = (prev.body || '').length;
+        const newLen  = (p.body  || '').length;
+        if (newLen > prevLen + 20) {
+          existingMap.set(p.id, { ...prev, ...p }); // merge, keep existing id/published
+          updatedCount++;
+        }
+      }
+    }
+
+    if (addedCount === 0 && updatedCount === 0) {
+      return res.json({ ok: true, message: 'No new posts (all duplicates)' });
+    }
+
+    const merged = [...toAdd, ...Array.from(existingMap.values())]
       .sort((a, b) => b.published - a.published)
       .slice(0, 500);
 
     await kv.set('posts', merged);
-    res.json({ ok: true, message: `✅ Saved ${newPosts.length} new posts (${merged.length} total)` });
+    const msg = [
+      addedCount   > 0 ? `${addedCount} new`           : '',
+      updatedCount > 0 ? `${updatedCount} updated (full text)` : '',
+    ].filter(Boolean).join(', ');
+    res.json({ ok: true, message: `✅ ${msg} (${merged.length} total)` });
   } catch (err) {
     console.error(err);
     res.status(500).json({ ok: false, message: err.message });

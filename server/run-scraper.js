@@ -12,9 +12,9 @@ const path      = require('path');
 
 const SESSION_FILE  = path.join(__dirname, 'fb-session.json');
 const FB_PAGE       = 'https://www.facebook.com/shekulliinfo';
-const VERCEL_URL    = process.env.VERCEL_URL || 'https://shekulli-info.vercel.app';
+const VERCEL_URL    = process.env.VERCEL_URL || 'https://shekulli.vercel.app';
 const ADMIN_PASS    = process.env.ADMIN_PASSWORD || 'shekulli2026';
-const WATCH_INTERVAL = 10 * 60 * 1000; // 10 minutes
+const WATCH_INTERVAL = 1 * 60 * 1000; // 1 minute
 
 function loadSession() {
   try { return JSON.parse(fs.readFileSync(SESSION_FILE, 'utf8')).cookies || []; }
@@ -147,6 +147,6 @@ async function scrape() {
 // Run immediately, then watch if --watch flag
 scrape();
 if (process.argv.includes('--watch')) {
-  console.log(`\n👁  Watch mode — scraping every 10 minutes. Press Ctrl+C to stop.\n`);
+  console.log(`\n👁  Watch mode — scraping every 1 minute. Press Ctrl+C to stop.\n`);
   setInterval(scrape, WATCH_INTERVAL);
 }

@@ -22,6 +22,41 @@ const ADMIN_PASS  = process.env.ADMIN_PASSWORD  || 'shekulli2026';
 const FB_TOKEN    = process.env.FB_PAGE_TOKEN;
 const WATCH_INTERVAL = 5 * 60 * 1000; // 5 minutes
 
+// ── Get a Page Access Token from either a User token or Page token ──────────
+// If given a User token, exchanges it for the Shekulli.info page token.
+async function resolvePageToken(token) {
+  // First check if it's already a page token by calling /me
+  const meRes  = await fetch(`https://graph.facebook.com/${GRAPH_VER}/me?access_token=${token}`);
+  const meData = await meRes.json();
+  if (meData.error) return token; // can't resolve — just try as-is
+
+  // If /me returns a page (not a user), we already have a page token
+  if (!meData.name?.match(/^[A-Z][a-z]+ [A-Z][a-z]+$/) && meData.id) {
+    // Looks like a page token already
+  }
+
+  // Try to get the page token from /me/accounts (works for user tokens)
+  const acctRes  = await fetch(`https://graph.facebook.com/${GRAPH_VER}/me/accounts?access_token=${token}`);
+  const acctData = await acctRes.json();
+
+  if (acctData.data) {
+    for (const page of acctData.data) {
+      if (/shekulli/i.test(page.name) || /shekulli/i.test(page.id)) {
+        console.log(`🔑 Resolved page token for: ${page.name}`);
+        return page.access_token;
+      }
+    }
+    // If shekulliinfo not found by name, just try first page
+    if (acctData.data.length > 0) {
+      console.log(`🔑 Using page token for: ${acctData.data[0].name}`);
+      return acctData.data[0].access_token;
+    }
+  }
+
+  // Fall back to original token
+  return token;
+}
+
 // ── Category detection ──────────────────────────────────────────────────────
 function guessCategory(text) {
   const t  = (text || '').toLowerCase();
@@ -88,7 +123,7 @@ async function mirrorImage(fbUrl, ts) {
 }
 
 // ── Fetch posts from the Graph API ─────────────────────────────────────────
-async function fetchGraphPosts(limit = 30) {
+async function fetchGraphPosts(limit = 30, token = FB_TOKEN) {
   const fields = [
     'id',
     'message',
@@ -99,7 +134,7 @@ async function fetchGraphPosts(limit = 30) {
   ].join(',');
 
   const url = `https://graph.facebook.com/${GRAPH_VER}/${FB_PAGE_ID}/posts` +
-    `?fields=${fields}&limit=${limit}&access_token=${FB_TOKEN}`;
+    `?fields=${fields}&limit=${limit}&access_token=${token}`;
 
   const res  = await fetch(url);
   const data = await res.json();
@@ -130,7 +165,9 @@ async function scrape() {
   }
 
   try {
-    const fbPosts = await fetchGraphPosts(30);
+    // Auto-exchange User token → Page token if needed
+    const pageToken = await resolvePageToken(FB_TOKEN);
+    const fbPosts = await fetchGraphPosts(30, pageToken);
     console.log(`[${ts}] 📦 Fetched ${fbPosts.length} posts from Graph API`);
 
     if (fbPosts.length === 0) {

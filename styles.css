@@ -212,18 +212,30 @@ ol {
 }
 
 .ticker__items {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+  padding: 0;
+}
+
+.ticker__track {
   display: flex;
-  gap: 28px;
-  padding: 10px 16px;
-  overflow-x: auto;
-  scrollbar-width: none;
+  gap: 56px;
   white-space: nowrap;
   font-size: 13px;
   color: var(--ink-1);
+  padding: 10px 0;
+  animation: ticker-scroll 30s linear infinite;
+  width: max-content;
 }
 
-.ticker__items::-webkit-scrollbar {
-  display: none;
+.ticker__track:hover {
+  animation-play-state: paused;
+}
+
+@keyframes ticker-scroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
 }
 
 .ticker__time {

@@ -145,17 +145,27 @@
         throw new Error('__NO_ARTICLES__'); // jump to catch (which we silence below)
       }
 
-      /* Ticker — latest 5 headlines */
-      const ticker = document.getElementById('ticker-items');
-      all.slice(0, 5).forEach(a => {
+      /* Ticker — continuous scrolling marquee */
+      const tickerWrap = document.getElementById('ticker-items');
+      const track = document.createElement('div');
+      track.className = 'ticker__track';
+
+      const tickerPosts = all.slice(0, 8);
+      function makeTickerItem(a) {
         const span = document.createElement('span');
         span.className = 'ticker__item';
         const t = new Date(a.published);
         const hh = String(t.getHours()).padStart(2, '0');
         const mm = String(t.getMinutes()).padStart(2, '0');
-        span.innerHTML = `<a href="article?id=${a.id}" style="color:inherit;text-decoration:none;"><span class="ticker__time">${hh}:${mm}</span><span class="ticker__text">${a.title}</span></a>`;
-        ticker.appendChild(span);
-      });
+        span.innerHTML = `<a href="article?id=${a.id}" style="color:inherit;text-decoration:none;"><span class="ticker__time">${hh}:${mm}</span> <span class="ticker__text">${a.title}</span></a>`;
+        return span;
+      }
+
+      // Add items twice so the loop is seamless
+      tickerPosts.forEach(a => track.appendChild(makeTickerItem(a)));
+      tickerPosts.forEach(a => track.appendChild(makeTickerItem(a)));
+
+      tickerWrap.appendChild(track);
 
       /* Most-read rail */
       const mostRead = document.getElementById('most-read');

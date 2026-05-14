@@ -23,7 +23,9 @@ jobs:
         run: cd server && npm install
 
       - name: Write Facebook session cookies
-        run: echo '${{ secrets.FB_SESSION }}' > server/fb-session.json
+        env:
+          FB_SESSION: ${{ secrets.FB_SESSION }}
+        run: printf '%s' "$FB_SESSION" > server/fb-session.json
 
       - name: Run scraper
         env:

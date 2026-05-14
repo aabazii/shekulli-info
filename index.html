@@ -66,19 +66,9 @@
       </aside>
 
       <section class="rail">
-        <h4 class="rail__head">Sport · Live</h4>
-        <div style="display:flex;flex-direction:column;gap:14px;">
-          <div
-            style="display:flex;justify-content:space-between;font-family:var(--font-sans);font-size:13px;border-bottom:1px solid var(--rule);padding-bottom:10px;">
-            <span><b>Tirana</b> — Partizani</span><span style="color:var(--brand-red);font-weight:700;">2 — 1</span>
-          </div>
-          <div
-            style="display:flex;justify-content:space-between;font-family:var(--font-sans);font-size:13px;border-bottom:1px solid var(--rule);padding-bottom:10px;">
-            <span>Vllaznia — Skënderbeu</span><span style="color:var(--ink-3);">19:00</span>
-          </div>
-          <div style="display:flex;justify-content:space-between;font-family:var(--font-sans);font-size:13px;">
-            <span>Laçi — Egnatia</span><span style="color:var(--ink-3);">21:00</span>
-          </div>
+        <h4 class="rail__head">Sport · Ndeshje</h4>
+        <div id="fixtures-list" style="display:flex;flex-direction:column;gap:0;">
+          <div style="font-family:var(--font-sans);font-size:12px;color:var(--ink-3);padding:8px 0;">Duke ngarkuar…</div>
         </div>
       </section>
     </aside>
@@ -223,6 +213,75 @@
 
     /* Pull from backend API and re-render if newer data arrives */
     window.ShekullDB.refreshFromAPI(function () { location.reload(); });
+
+    /* ── Fixtures widget ──────────────────────────────────────────── */
+    (async function loadFixtures() {
+      const el = document.getElementById('fixtures-list');
+      if (!el) return;
+
+      try {
+        const res  = await fetch('/api/fixtures');
+        const data = await res.json();
+        const matches = data.matches || [];
+
+        if (matches.length === 0) {
+          el.innerHTML = '<div style="font-family:var(--font-sans);font-size:12px;color:var(--ink-3);padding:8px 0;">Nuk ka ndeshje sot.</div>';
+          return;
+        }
+
+        // Group by league
+        const byLeague = {};
+        matches.forEach(m => {
+          if (!byLeague[m.league]) byLeague[m.league] = [];
+          byLeague[m.league].push(m);
+        });
+
+        const leagueOrder = ['Premier League', 'La Liga', 'Bundesliga', 'Serie A'];
+        let html = '';
+
+        leagueOrder.forEach(league => {
+          const games = byLeague[league];
+          if (!games || games.length === 0) return;
+
+          html += `<div style="font-family:var(--font-sans);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-3);padding:10px 0 4px;">${league}</div>`;
+
+          games.forEach((m, i) => {
+            const isLast  = i === games.length - 1;
+            const isLive  = ['IN_PLAY','PAUSED','LIVE'].includes(m.status);
+            const isDone  = m.status === 'FINISHED';
+            const hasScore = m.homeScore !== null && m.awayScore !== null;
+
+            // Format date/time
+            const d = new Date(m.utcDate);
+            const today2 = new Date();
+            const isToday = d.toDateString() === today2.toDateString();
+            const dateStr = isToday
+              ? d.toLocaleTimeString('sq-AL', { hour: '2-digit', minute: '2-digit' })
+              : d.toLocaleDateString('sq-AL', { day: 'numeric', month: 'short' }) + ' ' +
+                d.toLocaleTimeString('sq-AL', { hour: '2-digit', minute: '2-digit' });
+
+            let scoreHtml = '';
+            if (isLive) {
+              scoreHtml = `<span style="color:var(--brand-red);font-weight:700;">${m.homeScore} — ${m.awayScore}${m.minute ? ' <span style="font-size:10px;">'+m.minute+"'"+'</span>' : ''}</span>`;
+            } else if (isDone && hasScore) {
+              scoreHtml = `<span style="color:var(--ink-2);font-weight:600;">${m.homeScore} — ${m.awayScore}</span>`;
+            } else {
+              scoreHtml = `<span style="color:var(--ink-3);">${dateStr}</span>`;
+            }
+
+            html += `
+              <div style="display:flex;justify-content:space-between;align-items:center;font-family:var(--font-sans);font-size:12px;padding:6px 0;${!isLast ? 'border-bottom:1px solid var(--rule);' : ''}">
+                <span style="${isLive ? 'font-weight:700;' : ''}">${m.home} — ${m.away}</span>
+                ${scoreHtml}
+              </div>`;
+          });
+        });
+
+        el.innerHTML = html || '<div style="font-family:var(--font-sans);font-size:12px;color:var(--ink-3);padding:8px 0;">Nuk ka ndeshje sot.</div>';
+      } catch (e) {
+        el.innerHTML = '<div style="font-family:var(--font-sans);font-size:12px;color:var(--ink-3);padding:8px 0;">Ndeshjet nuk u ngarkuan.</div>';
+      }
+    })();
   </script>
 </body>
 

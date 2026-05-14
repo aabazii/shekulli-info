@@ -11,6 +11,7 @@
     { "source": "/api/admin/fix-timestamps", "destination": "/api/admin/fix-timestamps" },
     { "source": "/api/admin/delete",         "destination": "/api/admin/delete" },
     { "source": "/api/admin/upload",         "destination": "/api/admin/upload" },
-    { "source": "/api/admin/clear",          "destination": "/api/admin/clear" }
+    { "source": "/api/admin/clear",          "destination": "/api/admin/clear" },
+    { "source": "/api/fixtures",             "destination": "/api/fixtures" }
   ]
 }

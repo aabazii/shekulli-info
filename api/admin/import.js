@@ -90,11 +90,14 @@ module.exports = async function handler(req, res) {
         toAdd.push(p);
         addedCount++;
       } else {
-        // Already exists — update if the new body is longer (was truncated before)
+        // Already exists — update if:
+        // 1. New body is longer (post was truncated before), OR
+        // 2. Old title/standfirst still contains "See more" / "Shiko më shumë"
         const prevLen = (prev.body || '').length;
         const newLen  = (p.body  || '').length;
-        if (newLen > prevLen + 20) {
-          existingMap.set(p.id, { ...prev, ...p }); // merge, keep existing id/published
+        const hadSeeMore = /see\s*more|shiko\s*më\s*shumë/i.test(prev.title + ' ' + prev.standfirst);
+        if (newLen > prevLen + 20 || hadSeeMore) {
+          existingMap.set(p.id, { ...prev, ...p });
           updatedCount++;
         }
       }

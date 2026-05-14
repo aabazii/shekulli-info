@@ -402,16 +402,17 @@ async function scrape() {
     const posts = goodPosts.map(p => {
       const cat = guessCategory(p.text);
 
-      // Clean any leftover "See more" / "Shiko më shumë" from text
+      // Clean any leftover "See more" / "Shiko më shumë" and trailing ellipsis
       const cleanText = (p.text || '')
-        .replace(/\.{3,}\s*(See more|Shiko më shumë)\s*/gi, '')
-        .replace(/\s*(See more|Shiko më shumë)\s*/gi, ' ')
+        .replace(/\.{2,}\s*(See more|Shiko më shumë)[^a-zA-Z]*/gi, '') // "... See more"
+        .replace(/\s*(See more|Shiko më shumë)\s*/gi, ' ')              // bare "See more"
+        .replace(/\s{2,}/g, ' ')
         .trim();
 
       const lines = cleanText.split('\n').map(l => l.trim()).filter(Boolean);
 
-      // Title: first non-empty line, max 140 chars
-      let title = lines[0]?.slice(0, 140) || '';
+      // Title: first non-empty line, strip any trailing "..." artefact, max 140 chars
+      let title = (lines[0] || '').replace(/\.{2,}\s*$/, '').slice(0, 140);
       if (!title) title = p.hasVideo ? '📹 Video nga Shekulli.info' : p.image ? '📷 Foto nga Shekulli.info' : '(pa titull)';
 
       // Body: everything after the first line

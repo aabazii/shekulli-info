@@ -13,7 +13,6 @@ const path      = require('path');
 
 const SESSION_FILE = path.join(__dirname, 'fb-session.json');
 const FB_PAGE      = 'https://www.facebook.com/shekulliinfo';
-const FB_MOBILE    = 'https://m.facebook.com/shekulliinfo';
 const VERCEL_URL   = process.env.VERCEL_URL    || 'https://shekulli.vercel.app';
 const ADMIN_PASS   = process.env.ADMIN_PASSWORD || 'shekulli2026';
 
@@ -83,75 +82,69 @@ async function mirrorImage(page, fbUrl, ts) {
   } catch { return fbUrl; }
 }
 
-// ── Extract posts from m.facebook.com's simpler HTML structure ──────────────
+// ── Extract posts from current page DOM ─────────────────────────────────────
 function extractPosts() {
-  const JUNK = /^(Like|Comment|Share|Follow|More|Reply|See\s|Write|Send|Load|View\s\d|Shpërnda|Koment|Pëlqej|Shkruaj|Dërgo|Ngarko|Shiko\s\d|\d+\s*(min|h|orë|m\b)|Most relevant|All comments|Previous)/i;
+  const JUNK_LINE = /^(Like|Comment|Share|Follow|More|Shpërnda|Koment|Pëlqej|Shiko\s|Reag|Write a|Shkruaj|Reply|Përgjigju|See\s|Translated|Shikuar|Sponsored|Reklamë|Send|Dërgo|\d+[hm]\b|\d+\s*(orë|min)|More reactions|Most relevant|All comments|Top comments|Previous|View \d|Shiko \d|Load more|Ngarko më)/i;
   const results = [];
 
-  // m.facebook.com renders posts as <article> elements or divs with data-ft
-  // Try [role="article"] first, then fall back to article tags
-  const containers = Array.from(
-    document.querySelectorAll('[role="article"], article')
-  ).filter(el => {
-    // Must reference shekulliinfo somewhere (page author link)
-    return /shekulli/i.test(el.innerHTML);
-  }).filter(el => {
-    // Skip if nested inside another article
+  document.querySelectorAll('[role="article"]').forEach((el, idx) => {
+    if (!/shekulli/i.test(el.innerHTML)) return;
     let p = el.parentElement;
-    while (p) {
-      if (p.tagName === 'ARTICLE' || (p.getAttribute && p.getAttribute('role') === 'article')) return false;
-      p = p.parentElement;
+    while (p) { if (p.getAttribute && p.getAttribute('role') === 'article') return; p = p.parentElement; }
+
+    const commentNodes = new Set();
+    el.querySelectorAll('[role="article"]').forEach(ca => ca.querySelectorAll('*').forEach(n => commentNodes.add(n)));
+
+    function collectText(sel) {
+      const parts = [];
+      el.querySelectorAll(sel).forEach(d => {
+        if (commentNodes.has(d)) return;
+        if (d.closest('[aria-label*="omment"],[data-testid*="comment"]')) return;
+        const t = (d.innerText || '').trim();
+        if (t.length > 5) parts.push(t);
+      });
+      return [...new Set(parts)].join('\n').trim();
     }
-    return true;
-  });
 
-  containers.forEach((el, idx) => {
-    // Get full text, strip comments (nested articles/sections)
-    const commentEls = el.querySelectorAll('[role="article"], article, section');
-    const commentTexts = new Set();
-    commentEls.forEach(c => commentTexts.add((c.innerText || '').trim()));
+    let text = collectText('[dir="auto"]');
+    if (text.length < 20) text = collectText('[data-ad-comet-preview="message"]');
+    if (text.length < 20) {
+      const commentText = Array.from(el.querySelectorAll('[role="article"]')).map(ca => (ca.innerText || '').trim()).join(' ');
+      text = (el.innerText || '').replace(commentText, '').trim();
+    }
+    text = text.replace(/\s*(Shiko më shumë|See more|See More)\s*/gi, ' ').trim();
+    text = text.split('\n').map(l => l.trim()).filter(l => l.length > 3 && !JUNK_LINE.test(l)).join('\n').trim();
 
-    let rawText = (el.innerText || '').trim();
-    commentTexts.forEach(ct => { if (ct.length > 10) rawText = rawText.replace(ct, ''); });
-
-    let text = rawText
-      .replace(/\s*(Shiko më shumë|See more|See More)\s*/gi, ' ')
-      .split('\n').map(l => l.trim())
-      .filter(l => l.length > 3 && !JUNK.test(l))
-      .join('\n').trim();
-
-    // Image — grab largest scontent image
     let image = '';
     for (const img of el.querySelectorAll('img')) {
       const src = img.src || img.getAttribute('data-src') || '';
-      if (!src.includes('scontent') || !src.startsWith('https')) continue;
+      if (!src.startsWith('https') || !src.includes('scontent')) continue;
       const w = img.naturalWidth || img.width || 0;
       const h = img.naturalHeight || img.height || 0;
-      if (w > 0 && w < 80) continue;
-      if (h > 0 && h < 80) continue;
+      if (w > 0 && w < 120) continue; if (h > 0 && h < 120) continue;
       image = src; break;
     }
-
-    // Video / postUrl
-    let hasVideo = false, postUrl = '';
-    if (el.querySelector('video')) {
-      hasVideo = true;
-      const poster = el.querySelector('video')?.getAttribute('poster') || '';
-      if (!image && poster) image = poster;
+    if (!image) {
+      for (const img of el.querySelectorAll('img')) {
+        const src = img.src || img.getAttribute('data-src') || '';
+        const w = img.naturalWidth || img.width || 0; const h = img.naturalHeight || img.height || 0;
+        if (src.startsWith('https') && !src.includes('emoji') && !src.includes('rsrc.php') && !src.includes('/static/') && src.length > 80 && (w === 0 || w > 120) && (h === 0 || h > 120)) { image = src; break; }
+      }
     }
+
+    let hasVideo = false, postUrl = '';
+    const videoEl = el.querySelector('video');
+    if (videoEl) { hasVideo = true; const poster = videoEl.getAttribute('poster') || ''; if (!image && poster) image = poster; }
     for (const a of el.querySelectorAll('a[href]')) {
       const href = a.href || '';
-      if (/\/(videos|reel|posts|story)\/|[?&]v=\d|fb\.watch|story_fbid/i.test(href)) { postUrl = href; break; }
+      if (/\/(videos|reel|posts)\/|[?&]v=\d|fb\.watch/i.test(href)) { postUrl = href; break; }
     }
     if (!hasVideo && /\/(videos|reel)\/|fb\.watch/i.test(postUrl)) hasVideo = true;
 
-    // Timestamp
     let published = Date.now();
-    const timeEl = el.querySelector('abbr[data-utime], time[datetime]');
-    if (timeEl?.dataset?.utime) published = parseInt(timeEl.dataset.utime) * 1000;
-    else if (timeEl?.getAttribute('datetime')) published = new Date(timeEl.getAttribute('datetime')).getTime() || Date.now();
+    const abbr = el.querySelector('abbr[data-utime]');
+    if (abbr) published = parseInt(abbr.dataset.utime) * 1000;
 
-    // Stable ID
     const seed = (postUrl || text || image).slice(0, 50);
     const id = 'fb_' + idx + '_' + btoa(encodeURIComponent(seed)).replace(/[^a-z0-9]/gi, '').slice(0, 16);
 
@@ -187,17 +180,13 @@ async function pushPosts(posts) {
       args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--window-size=1280,900'],
     });
     const page = await browser.newPage();
-    // Use a mobile viewport + user agent — m.facebook.com loads all posts
-    // as plain HTML without JS virtualization, much easier to scroll/scrape
-    await page.setViewport({ width: 390, height: 844 });
-    await page.setUserAgent('Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1');
+    await page.setViewport({ width: 1280, height: 900 });
+    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36');
 
     const cookies = loadSession();
     if (!cookies.length) { console.log('⚠️  No session file — run: node server/save-session.js'); process.exit(1); }
-    // Normalize domains so cookies work on both www. and m.facebook.com
-    const mobileCookies = cookies.map(c => ({ ...c, domain: '.facebook.com' }));
-    await page.setCookie(...mobileCookies);
-    console.log(`🍪 Loaded ${mobileCookies.length} cookies (domain=.facebook.com)`);
+    await page.setCookie(...cookies);
+    console.log(`🍪 Loaded ${cookies.length} cookies`);
 
     await page.setRequestInterception(true);
     page.on('request', req => {
@@ -206,8 +195,9 @@ async function pushPosts(posts) {
       else req.continue();
     });
 
-    console.log('🌐 Loading mobile page…');
-    await page.goto(FB_MOBILE, { waitUntil: 'domcontentloaded', timeout: 60000 });
+    console.log('🌐 Loading page…');
+    await page.goto(FB_PAGE, { waitUntil: 'domcontentloaded', timeout: 60000 });
+    try { await page.waitForSelector('[role="article"]', { timeout: 12000 }); } catch {}
     await new Promise(r => setTimeout(r, 4000));
 
     const currentUrl = page.url();

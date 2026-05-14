@@ -375,13 +375,28 @@
         <div class="photo-preview" id="photo-preview">
           <span id="photo-placeholder-text">Nuk ka foto</span>
         </div>
-        <div class="field" style="margin-bottom:0;">
-          <label>URL e fotos</label>
-          <input type="url" id="f-photo" placeholder="https://images.unsplash.com/…"
-            oninput="updatePhotoPreview(this.value)">
+
+        <!-- Upload from library -->
+        <div style="margin-bottom:12px;">
+          <input type="file" id="f-photo-file" accept="image/*" style="display:none" onchange="handleFileUpload(this)">
+          <button type="button" class="btn btn--ghost btn--full" onclick="document.getElementById('f-photo-file').click()" id="upload-btn">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            Ngarko nga libraria
+          </button>
         </div>
-        <p style="font-size:11px;color:var(--ink-3);margin:8px 0 0;">Unsplash: images.unsplash.com/photo-XXX?w=1400&q=70
-        </p>
+
+        <!-- Divider -->
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+          <div style="flex:1;height:1px;background:var(--rule);"></div>
+          <span style="font-size:11px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.08em;">ose</span>
+          <div style="flex:1;height:1px;background:var(--rule);"></div>
+        </div>
+
+        <!-- Paste URL -->
+        <div class="field" style="margin-bottom:0;">
+          <label>Ngjit URL të fotos</label>
+          <input type="url" id="f-photo" placeholder="https://…" oninput="updatePhotoPreview(this.value)">
+        </div>
       </div>
 
       <!-- Published articles -->
@@ -416,6 +431,38 @@
       el.textContent = msg;
       el.classList.add('show');
       setTimeout(() => el.classList.remove('show'), duration);
+    }
+
+    async function handleFileUpload(input) {
+      const file = input.files[0];
+      if (!file) return;
+
+      const btn = document.getElementById('upload-btn');
+      btn.textContent = '⏳ Duke ngarkuar…';
+      btn.disabled = true;
+
+      try {
+        const res = await fetch('/api/admin/upload?filename=' + encodeURIComponent(file.name), {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer shekulli2026',
+            'Content-Type': file.type,
+          },
+          body: file,
+        });
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.message);
+
+        document.getElementById('f-photo').value = data.url;
+        updatePhotoPreview(data.url);
+        toast('✓ Foto u ngarkua!');
+      } catch (err) {
+        toast('❌ Gabim: ' + err.message);
+      } finally {
+        btn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Ngarko nga libraria';
+        btn.disabled = false;
+        input.value = '';
+      }
     }
 
     function updatePhotoPreview(url) {

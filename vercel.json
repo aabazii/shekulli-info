@@ -15,6 +15,7 @@
     { "source": "/api/admin/delete",         "destination": "/api/admin/delete" },
     { "source": "/api/admin/upload",         "destination": "/api/admin/upload" },
     { "source": "/api/admin/clear",          "destination": "/api/admin/clear" },
+    { "source": "/api/admin/fix-posts",      "destination": "/api/admin/fix-posts" },
     { "source": "/api/fixtures",             "destination": "/api/fixtures" }
   ]
 }

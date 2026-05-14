@@ -262,9 +262,9 @@
 
             let scoreHtml = '';
             if (isLive) {
-              scoreHtml = `<span style="color:var(--brand-red);font-weight:700;">${m.homeScore} — ${m.awayScore}${m.minute ? ' <span style="font-size:10px;">'+m.minute+"'"+'</span>' : ''}</span>`;
+              scoreHtml = `<span style="color:var(--brand-red);font-weight:700;">${m.homeScore}-${m.awayScore}${m.minute ? ' <span style="font-size:10px;">'+m.minute+"'"+'</span>' : ''}</span>`;
             } else if (isDone && hasScore) {
-              scoreHtml = `<span style="color:var(--ink-2);font-weight:600;">${m.homeScore} — ${m.awayScore}</span>`;
+              scoreHtml = `<span style="color:var(--ink-2);font-weight:600;">${m.homeScore}-${m.awayScore}</span>`;
             } else {
               scoreHtml = `<span style="color:var(--ink-3);">${dateStr}</span>`;
             }

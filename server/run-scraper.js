@@ -25,6 +25,45 @@ function loadSession() {
   catch { return []; }
 }
 
+// ── Mirror a Facebook CDN image → Vercel Blob ───────────────────────────────
+// FB scontent URLs expire and are session-bound; we re-host them permanently.
+async function mirrorImage(page, fbUrl, ts) {
+  if (!fbUrl) return '';
+  try {
+    // Use the puppeteer page's session to fetch the image bytes
+    const bytes = await page.evaluate(async (src) => {
+      try {
+        const r = await fetch(src, { credentials: 'include' });
+        if (!r.ok) return null;
+        const ab = await r.arrayBuffer();
+        return Array.from(new Uint8Array(ab));
+      } catch { return null; }
+    }, fbUrl);
+
+    if (!bytes || bytes.length < 500) return fbUrl; // fetch failed, keep original
+
+    const buf = Buffer.from(bytes);
+    const ext = fbUrl.includes('.png') ? 'png' : 'jpg';
+    const filename = `fb-${ts}.${ext}`;
+
+    const uploadRes = await fetch(`${VERCEL_URL}/api/admin/upload?filename=${filename}`, {
+      method:  'POST',
+      headers: {
+        'Content-Type':  `image/${ext}`,
+        'Authorization': `Bearer ${ADMIN_PASS}`,
+      },
+      body: buf,
+    });
+
+    if (!uploadRes.ok) return fbUrl;
+    const data = await uploadRes.json();
+    return data.url || fbUrl;
+  } catch (err) {
+    console.warn(`  ⚠️  Image mirror failed: ${err.message}`);
+    return fbUrl; // fallback — original URL, may expire but better than nothing
+  }
+}
+
 // ── Category detection ──────────────────────────────────────────────────────
 // Checks hashtags first (most reliable), then broad keyword matching.
 function guessCategory(text) {
@@ -304,6 +343,18 @@ async function scrape() {
     const withImg   = raw.filter(p => p.image).length;
     const withVideo = raw.filter(p => p.hasVideo).length;
     console.log(`[${ts}] 🖼  ${withImg}/${raw.length} have images  📹 ${withVideo} videos`);
+
+    // ── Mirror images → Vercel Blob (permanent URLs, no FB expiry) ────────
+    console.log(`[${ts}] ☁️  Mirroring images to Vercel Blob…`);
+    for (const p of raw) {
+      if (p.image) {
+        const mirrored = await mirrorImage(page, p.image, p.published);
+        if (mirrored !== p.image) {
+          console.log(`[${ts}]   ✅ Mirrored: …${mirrored.slice(-40)}`);
+        }
+        p.image = mirrored;
+      }
+    }
 
     // ── Map raw posts → article objects ───────────────────────────────────
     const posts = raw.map(p => {

@@ -4,6 +4,9 @@
   "outputDirectory": ".",
   "installCommand": "npm install",
   "cleanUrls": true,
+  "functions": {
+    "api/admin/upload.js": { "maxDuration": 30 }
+  },
   "rewrites": [
     { "source": "/api/articles",             "destination": "/api/articles" },
     { "source": "/api/health",               "destination": "/api/health" },

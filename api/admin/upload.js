@@ -2,9 +2,6 @@ const { put } = require('@vercel/blob');
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'shekulli2026';
 
-// Vercel needs this to handle raw binary uploads (not JSON)
-export const config = { api: { bodyParser: false } };
-
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');

@@ -376,12 +376,8 @@ async function scrape() {
     const goodPosts = raw;
 
     console.log(`[${ts}] 📦 Found ${goodPosts.length} posts`);
-    if (totalCandidates === 0) {
-      console.log(`[${ts}] ⚠️  0 articles — session may have expired. Run: node server/save-session.js`);
-      return;
-    }
     if (goodPosts.length === 0) {
-      console.log(`[${ts}] ⚠️  0 posts passed quality gate — check debug lines above`);
+      console.log(`[${ts}] ⚠️  0 posts — session may be expired or page rendered no content`);
       return;
     }
 

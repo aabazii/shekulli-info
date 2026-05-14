@@ -6,27 +6,30 @@ function guessCategory(text) {
   const t  = (text || '').toLowerCase();
   const ht = (text || '');
 
-  if (/#sport|#futboll|#basketball|#basketboll|#tenis|#formula1|#f1/i.test(ht))          return 'Sport';
-  if (/#politik|#qeveri|#kuvend|#parti|#zgjedhj|#opozit|#ps\b|#pd\b|#ldk\b|#vv\b/i.test(ht)) return 'Politikë';
-  if (/#kosov|#prishtinë|#prizren|#peja|#mitrovica|#gjakova|#ferizaj|#gjilan/i.test(ht)) return 'Kosovë';
-  if (/#ekonomi|#biznes|#financa|#turizëm/i.test(ht))                                    return 'Ekonomi';
-  if (/#botë|#ndërkombëtar|#nato|#eu\b|#onu\b|#ukrainë|#trump|#putin/i.test(ht))        return 'Botë';
-  if (/#kulture|#kulturë|#art|#muzikë|#film|#teatër/i.test(ht))                          return 'Kulturë';
-  if (/#opinion|#koment|#editorial|#analiz/i.test(ht))                                   return 'Opinion';
+  // Hashtags first (most reliable signal) — Politikë & Kosovë before Sport
+  if (/#politik|#qeveri|#kuvend|#parti|#zgjedhj|#opozit|#ps\b|#pd\b|#lsi\b|#ldk\b|#vv\b/i.test(ht)) return 'Politikë';
+  if (/#kosov|#prishtinë|#prizren|#peja|#mitrovica|#gjakova|#ferizaj|#gjilan|#deçan/i.test(ht))      return 'Kosovë';
+  if (/#sport|#futboll|#basketball|#basketboll|#tenis|#volejboll|#atletizëm|#formula1|#f1/i.test(ht)) return 'Sport';
+  if (/#ekonomi|#biznes|#financa|#turizëm/i.test(ht))                                                 return 'Ekonomi';
+  if (/#botë|#ndërkombëtar|#nato|#eu\b|#onu\b|#ukrainë|#trump|#putin/i.test(ht))                     return 'Botë';
+  if (/#kulture|#kulturë|#art|#muzikë|#film|#teatër/i.test(ht))                                       return 'Kulturë';
+  if (/#opinion|#koment|#editorial|#analiz/i.test(ht))                                                return 'Opinion';
 
-  if (/\bsport\b|futboll|basketboll|volejboll|tenis|gjimnastik|formula\s*1|\bf1\b|kampionat|gol\b|penalti|arbitër|ndeshje|stadium|lojtarë|trajner|transferim|skuadër|klub\b|liga\b|serie\s*a|premier\s*league|champions|europa\s*league|bundesliga|laliga|nba\b|fifa\b|uefa\b/.test(t))
-    return 'Sport';
-  if (/politik|qeveri|kuvend|kryeministr|ministr|premier|deputet|parti\b|opozit|mazhorancë|koalicion|zgjedhj|votim|referendum|presidenc|dekret|bashki|komun|ligj\b|amendament|kushtetut|edi\s*rama|rama\b|basha\b|berisha|kryeminist/.test(t))
+  // Keyword matching — Politikë & Kosovë checked BEFORE Sport
+  if (/\bpolitik|\bqeveri\b|\bkuvend\b|\bkryeministr|\bministr|\bdeputet|\bopozit|\bmazhorancë|\bkoalicion|\bzgjedhj|\bvotim\b|\breferendum|\bpresidenc|\bdekret\b|\breform\b|\bligj\b|\bamendament|\bkushtetut|\bedi\s*rama|\brama\b|\bbasha\b|\bberisha|\bkryeminist|\bvetëvendosje|\bvv\b|\bldk\b|\bpdk\b|\blsi\b/.test(t))
     return 'Politikë';
-  if (/kosov|prishtinë|prizren|pejë\b|mitrovicë|gjakovë|ferizaj|gjilan|deçan|rahovec|suharekë|vushtrri|podujevë|kamenicë|dragash|malishevë|kurti\b|vjosa\b|osmani/.test(t))
+  if (/\bkosov|\bprishtinë|\bprizren|\bpejë\b|\bmitrovicë|\bgjakovë|\bferizaj|\bgjilan|\bdeçan|\brahovec|\bsuharekë|\bvushtrri|\bpodujevë|\bkamenicë|\bdragash|\bmalishevë|\bkurti\b|\bvjosa\b|\bosmani\b|\bsrpska|\bpolicia\b|\bprokuroria\b|\bgjykata\b/.test(t))
     return 'Kosovë';
-  if (/\bbotë\b|ndërkombëtar|europë\b|bashkim\s*europian|\beu\b|\bnato\b|\bonu\b|shba\b|shtetet\s*e\s*bashkuara|ukrainë|rusi|izrael|palestin|gaza\b|trump|biden|putin|zelenski|macron|erdogan|kinë|japoni|siri|afganistan|irak|iran\b|libi|turqi/.test(t))
+  // Sport: only unambiguous sports terms (removed ndeshje, klub, liga, kampionat — too generic)
+  if (/\bfutboll|\bbasketboll|\bvolejboll|\btenis\b|\batletizëm|\bgjimnastik|\bformula\s*1|\bf1\b|\bmoto\s*gp|\bgol\b|\bpenalti\b|\barbitër\b|\bstadium\b|\btifo\b|\blojtarë|\btrajner\b|\btransferim\b|\bskuadër\b|\bserie\s*a|\bpremier\s*league|\bchampions\b|\beuropa\s*league|\bbundesliga|\blaliga\b|\bnba\b|\bfifa\b|\buefa\b|\bkampionat\b/.test(t))
+    return 'Sport';
+  if (/\bbotë\b|\bndërkombëtar|\beuropë\b|\bbashkim\s*europian|\beu\b|\bnato\b|\bonu\b|\bshba\b|\bukrainë|\brusi\b|\bizrael|\bpalestin|\bgaza\b|\btrump\b|\bbiden\b|\bputin\b|\bzelenski|\bmacron\b|\berdogan\b|\bkinë\b|\bjaponi\b|\bsiri\b|\bafganistan|\birak\b|\biran\b|\blibi\b|\bturqi\b/.test(t))
     return 'Botë';
-  if (/ekonomi|biznes|banka\b|bankë\b|inflacion|turizëm|eksport|import|treg\b|gdp\b|bpv\b|investim|kompani|aksion|bursë|kurs\s*këmbim|tatim|doganë|tregti|prodhim|punësim|papunësi|pagë\b|recesion|startup/.test(t))
+  if (/\bekonomi|\bbiznes\b|\bbanka\b|\bbankë\b|\binflacion|\bturizëm|\beksport|\bimport\b|\btreg\b|\bgdp\b|\bbpv\b|\binvestim|\bkompani\b|\baksion\b|\bbursë\b|\btatim\b|\bdoganë\b|\btregti\b|\bprodhim\b|\bpunësim|\bpapunësi|\bpagë\b|\brecesion|\bstartup/.test(t))
     return 'Ekonomi';
-  if (/kulturë|art\b|muzikë|këngë|këngëtar|aktor|aktore|film\b|kinema|teatër|ekspozitë|libër|libra|shkrimtar|poet|poezia|festiv|koncert|albumin|albumit|premiere|galeri|arkitektur|trashëgimi/.test(t))
+  if (/\bkulturë\b|\bart\b|\bmuzikë\b|\bkëngë\b|\bkëngëtar|\baktor\b|\baktore\b|\bfilm\b|\bkinema\b|\bteatër\b|\bekspozitë|\blibër\b|\bshkrimtar|\bpoet\b|\bpoezi|\bfestiv|\bkoncert\b|\balbum|\bpremiere\b|\bgaleri\b|\btrashëgimi/.test(t))
     return 'Kulturë';
-  if (/opinion|koment\b|editorial|analiz|perspektiv|vëzhgim|debat\b/.test(t))
+  if (/\bopinion\b|\bkoment\b|\beditorial|\banaliz|\bperspektiv|\bvëzhgim|\bdebat\b/.test(t))
     return 'Opinion';
 
   return 'Lajme';

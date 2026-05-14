@@ -146,32 +146,67 @@ async function scrape() {
     const raw = await page.evaluate(() => {
       const results = [];
 
+      // ── Helper: is this article element a top-level page post? ──────────
+      // Facebook nests comments as [role="article"] inside the post article.
+      // We only want the outermost ones (direct children of the feed container).
+      // Strategy: skip any [role="article"] whose closest ancestor [role="article"]
+      // is also a [role="article"] — i.e. it IS nested inside another post.
+      function isNestedArticle(el) {
+        let p = el.parentElement;
+        while (p) {
+          if (p.getAttribute && p.getAttribute('role') === 'article') return true;
+          p = p.parentElement;
+        }
+        return false;
+      }
+
+      // UI/junk line patterns to strip out
+      const JUNK_LINE = /^(Like|Comment|Share|Follow|More|Shpërnda|Koment|Pëlqej|Shiko\s|Reag|Write a|Shkruaj|Reply|Përgjigju|See\s|Translated|Shikuar|Sponsored|Reklamë|Send|Dërgo|\d+[hm]|\d+\s*(orë|min)|More reactions|Most relevant|All comments|Top comments|Previous comments|View \d|Shiko \d|Load more|Ngarko më)/i;
+
       document.querySelectorAll('[role="article"]').forEach((el, idx) => {
 
-        // ── TEXT ──────────────────────────────────────────────────────────
-        // Comments on Facebook are nested [role="article"] inside the post.
-        // Collect all dir="auto" nodes that belong to comments so we can skip them.
-        const commentNodes = new Set();
-        el.querySelectorAll('[role="article"]').forEach(comment => {
-          comment.querySelectorAll('div[dir="auto"]').forEach(d => commentNodes.add(d));
-        });
+        // ── SKIP nested articles (comments/replies) ────────────────────
+        if (isNestedArticle(el)) return;
 
-        // Only grab text from the POST itself, not from comments
+        // ── Also skip if the article contains NO post-level action bar ──
+        // Real page posts always have a reactions/share bar somewhere.
+        // If the element has no link to /posts/ or /videos/ or /reel/
+        // AND no like/share buttons, it's probably UI chrome — skip it.
+        const rawHtml = el.innerHTML || '';
+        const hasPostLink = /\/(posts|videos|reel|photo|story)\//i.test(rawHtml) || /[?&]story_fbid=/i.test(rawHtml);
+        if (!hasPostLink) return;
+
+        // ── TEXT ──────────────────────────────────────────────────────────
+        // Collect text only from the post's own dir="auto" divs.
+        // Exclude any div that lives inside a nested [role="article"] (comment).
+        const commentDivs = new Set();
+        el.querySelectorAll('[role="article"] div[dir="auto"]').forEach(d => commentDivs.add(d));
+
         const textParts = [];
         el.querySelectorAll('div[dir="auto"]').forEach(d => {
-          if (commentNodes.has(d)) return; // skip comment text
+          if (commentDivs.has(d)) return;
+          // Also skip if it's a child of a comment list container
+          const inList = d.closest('[aria-label*="omment"], [aria-label*="omento"], [data-testid*="comment"]');
+          if (inList) return;
           const t = (d.innerText || '').trim();
           if (t.length > 5) textParts.push(t);
         });
+
         let text = [...new Set(textParts)].join('\n').trim();
-        if (!text || text.length < 10) {
-          text = (el.innerText || '').split('\n')
-            .map(l => l.trim())
-            .filter(l => l.length > 5 &&
-              !/^(Like|Comment|Share|Follow|More|Shpërnda|Koment|Pëlqej|Shiko|Reag|Write a|Shkruaj)/i.test(l))
-            .join('\n');
-        }
-        text = text.replace(/\s*Shiko më shumë\s*/gi, ' ').trim();
+
+        // Clean up Facebook UI artifacts
+        text = text
+          .replace(/\s*Shiko më shumë\s*/gi, ' ')
+          .replace(/\s*See more\s*/gi, ' ')
+          .replace(/\s*See More\s*/gi, ' ')
+          .trim();
+
+        // Filter out junk lines from the assembled text
+        text = text.split('\n')
+          .map(l => l.trim())
+          .filter(l => l.length > 3 && !JUNK_LINE.test(l))
+          .join('\n')
+          .trim();
 
         // ── IMAGE ─────────────────────────────────────────────────────────
         let image = '';
@@ -245,11 +280,14 @@ async function scrape() {
         const id   = 'fb_' + idx + '_' +
           btoa(encodeURIComponent(seed)).replace(/[^a-z0-9]/gi, '').slice(0, 16);
 
-        // Only keep posts that look like real news:
-        // must have an image/video AND 40+ chars, OR 150+ chars of text alone
-        const looksReal = (image || hasVideo) && text.length > 40;
-        const longEnough = text.length > 150;
-        if (looksReal || longEnough) {
+        // ── QUALITY GATE ──────────────────────────────────────────────────
+        // Real news posts: image/video + at least 80 chars, OR text alone ≥ 200 chars.
+        // This filters out stray comments, reaction posts, and UI noise.
+        const hasMedia  = !!(image || hasVideo);
+        const looksReal = hasMedia && text.length >= 80;
+        const longText  = text.length >= 200;
+
+        if (looksReal || longText) {
           results.push({ id, text, image, published, hasVideo, postUrl });
         }
       });

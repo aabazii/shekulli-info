@@ -69,8 +69,16 @@ module.exports = async function handler(req, res) {
     const blocklist   = new Set((await kv.get('deleted_ids')) || []);
     const existingIds = new Set(existing.map(p => String(p.id)));
 
+    // Server-side quality gate: reject short/junk posts
+    // Real news needs either (media + 80 chars) or (200+ chars of text alone)
+    const quality = validated.filter(p => {
+      const bodyLen = (p.body || '').length;
+      const hasMedia = !!(p.photo || p.hasVideo);
+      return (hasMedia && bodyLen >= 80) || bodyLen >= 200;
+    });
+
     // Skip posts that already exist OR were previously deleted by admin
-    const newPosts = validated.filter(p => !existingIds.has(p.id) && !blocklist.has(p.id));
+    const newPosts = quality.filter(p => !existingIds.has(p.id) && !blocklist.has(p.id));
 
     if (newPosts.length === 0) return res.json({ ok: true, message: 'No new posts (all duplicates)' });
 

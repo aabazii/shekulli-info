@@ -1,0 +1,32 @@
+name: Deep Scrape (Historical Posts)
+
+on:
+  workflow_dispatch: # manual trigger only
+
+jobs:
+  deep-scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install scraper dependencies
+        run: cd server && npm install
+
+      - name: Write Facebook session cookies
+        env:
+          FB_SESSION: ${{ secrets.FB_SESSION }}
+        run: printf '%s' "$FB_SESSION" > server/fb-session.json
+
+      - name: Run deep scraper
+        env:
+          VERCEL_URL: https://shekulli.vercel.app
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+        run: node server/deep-scrape.js

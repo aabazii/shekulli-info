@@ -2,13 +2,13 @@ name: Scrape Facebook Posts
 
 on:
   schedule:
-    - cron: '*/5 * * * *'   # every 5 minutes (GitHub minimum)
+    - cron: '*/5 * * * *'   # every 5 minutes
   workflow_dispatch:          # manual trigger from GitHub UI
 
 jobs:
   scrape:
     runs-on: ubuntu-latest
-    timeout-minutes: 4        # kill if it hangs
+    timeout-minutes: 3        # Graph API is fast — 3 min is plenty
 
     steps:
       - name: Checkout code
@@ -19,16 +19,9 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Install scraper dependencies
-        run: cd server && npm install
-
-      - name: Write Facebook session cookies
-        env:
-          FB_SESSION: ${{ secrets.FB_SESSION }}
-        run: printf '%s' "$FB_SESSION" > server/fb-session.json
-
       - name: Run scraper
         env:
-          VERCEL_URL: https://shekulli.vercel.app
+          FB_PAGE_TOKEN: ${{ secrets.FB_PAGE_TOKEN }}
           ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+          VERCEL_URL: https://shekulli.vercel.app
         run: node server/run-scraper.js

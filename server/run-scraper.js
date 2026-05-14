@@ -1,76 +1,32 @@
 #!/usr/bin/env node
 /**
- * Shekulli.info — Facebook scraper
- * - Full text via "See more" expansion
- * - Images: scontent CDN priority
- * - Videos: detects reels, fb.watch, /videos/ — embeds via FB SDK
- * - Smart category detection (hashtags + keywords in Albanian/English)
+ * Shekulli.info — Facebook Graph API scraper (v3)
  *
- * Run once:        node server/run-scraper.js
- * Run every 1min:  node server/run-scraper.js --watch
+ * Uses the official Graph API — no Puppeteer, no session cookies.
+ * Returns full post text (no "See more" truncation), real timestamps,
+ * and never gets blocked by Facebook's anti-bot systems.
+ *
+ * Requires:
+ *   FB_PAGE_TOKEN  — Page Access Token for the shekulliinfo page
+ *   ADMIN_PASSWORD — Vercel admin password (default: shekulli2026)
+ *   VERCEL_URL     — Deployed site URL (default: https://shekulli.vercel.app)
+ *
+ * Run once:       node server/run-scraper.js
+ * Run in watch:   node server/run-scraper.js --watch
  */
 
-const puppeteer = require('puppeteer');
-const fs        = require('fs');
-const path      = require('path');
-
-const SESSION_FILE   = path.join(__dirname, 'fb-session.json');
-const FB_PAGE        = 'https://www.facebook.com/shekulliinfo';
-const VERCEL_URL     = process.env.VERCEL_URL    || 'https://shekulli.vercel.app';
-const ADMIN_PASS     = process.env.ADMIN_PASSWORD || 'shekulli2026';
-const WATCH_INTERVAL = 1 * 60 * 1000; // 1 minute
-
-function loadSession() {
-  try { return JSON.parse(fs.readFileSync(SESSION_FILE, 'utf8')).cookies || []; }
-  catch { return []; }
-}
-
-// ── Mirror a Facebook CDN image → Vercel Blob ───────────────────────────────
-// FB scontent URLs expire and are session-bound; we re-host them permanently.
-async function mirrorImage(page, fbUrl, ts) {
-  if (!fbUrl) return '';
-  try {
-    // Use the puppeteer page's session to fetch the image bytes
-    const bytes = await page.evaluate(async (src) => {
-      try {
-        const r = await fetch(src, { credentials: 'include' });
-        if (!r.ok) return null;
-        const ab = await r.arrayBuffer();
-        return Array.from(new Uint8Array(ab));
-      } catch { return null; }
-    }, fbUrl);
-
-    if (!bytes || bytes.length < 500) return fbUrl; // fetch failed, keep original
-
-    const buf = Buffer.from(bytes);
-    const ext = fbUrl.includes('.png') ? 'png' : 'jpg';
-    const filename = `fb-${ts}.${ext}`;
-
-    const uploadRes = await fetch(`${VERCEL_URL}/api/admin/upload?filename=${filename}`, {
-      method:  'POST',
-      headers: {
-        'Content-Type':  `image/${ext}`,
-        'Authorization': `Bearer ${ADMIN_PASS}`,
-      },
-      body: buf,
-    });
-
-    if (!uploadRes.ok) return fbUrl;
-    const data = await uploadRes.json();
-    return data.url || fbUrl;
-  } catch (err) {
-    console.warn(`  ⚠️  Image mirror failed: ${err.message}`);
-    return fbUrl; // fallback — original URL, may expire but better than nothing
-  }
-}
+const GRAPH_VER   = 'v21.0';
+const FB_PAGE_ID  = 'shekulliinfo';
+const VERCEL_URL  = process.env.VERCEL_URL     || 'https://shekulli.vercel.app';
+const ADMIN_PASS  = process.env.ADMIN_PASSWORD  || 'shekulli2026';
+const FB_TOKEN    = process.env.FB_PAGE_TOKEN;
+const WATCH_INTERVAL = 5 * 60 * 1000; // 5 minutes
 
 // ── Category detection ──────────────────────────────────────────────────────
-// Checks hashtags first (most reliable), then broad keyword matching.
 function guessCategory(text) {
   const t  = (text || '').toLowerCase();
-  const ht = (text || ''); // original case for hashtag check
+  const ht = (text || '');
 
-  // ── Hashtag shortcuts (e.g. #Sport, #Futboll, #Politike) ──
   if (/#sport|#futboll|#basketball|#basketboll|#tenis|#volejboll|#not|#atletizëm|#formula1|#f1/i.test(ht))
     return 'Sport';
   if (/#politik|#qeveri|#kuvend|#parti|#zgjedhj|#opozit|#ps\b|#pd\b|#lsi\b|#ldk\b|#vv\b/i.test(ht))
@@ -86,381 +42,182 @@ function guessCategory(text) {
   if (/#opinion|#koment|#editorial|#analiz/i.test(ht))
     return 'Opinion';
 
-  // ── Keyword matching ────────────────────────────────────────────────────
-  // Sport — check before Politik because "ndeshje" can appear in political contexts too
   if (/\bsport\b|futboll|basketboll|volejboll|tenis|not\b|atletizëm|gjimnastik|formula\s*1|\bf1\b|moto\s*gp|kampionat|gol\b|penalti|arbitër|ndeshje|stadium|tifo|lojtarë|trajner|transferim|skuadër|klub\b|liga\b|serie\s*a|premier\s*league|champions|europa\s*league|bundesliga|laliga|nba\b|fifa\b|uefa\b/.test(t))
     return 'Sport';
-
-  // Politikë
-  if (/politik|qeveri|kuvend|kryeministr|ministr|premier|deputet|parti\b|opozit|mazhorancë|koalicion|zgjedhj|votim|referendum|presidenc|dekret|bashki|komun|bashkëpunim\s*politik|protestat?\s*politik|krizë\s*politik|reform|ligj\b|amendament|kushtetut|edi\s*rama|rama\b|basha\b|monika|berisha|kryeminist/.test(t))
+  if (/politik|qeveri|kuvend|kryeministr|ministr|premier|deputet|parti\b|opozit|mazhorancë|koalicion|zgjedhj|votim|referendum|presidenc|dekret|bashki|komun|reform|ligj\b|amendament|kushtetut|edi\s*rama|rama\b|basha\b|berisha|kryeminist/.test(t))
     return 'Politikë';
-
-  // Kosovë
-  if (/kosov|prishtinë|prizren|pejë\b|mitrovicë|gjakovë|ferizaj|gjilan|deçan|rahovec|suharekë|vushtrri|podujevë|kamenicë|dragash|malishevë|arta\s*gruda|kurti\b|vjosa\b|osmani|srpska/.test(t))
+  if (/kosov|prishtinë|prizren|pejë\b|mitrovicë|gjakovë|ferizaj|gjilan|deçan|rahovec|suharekë|vushtrri|podujevë|kamenicë|dragash|malishevë|kurti\b|vjosa\b|osmani|srpska/.test(t))
     return 'Kosovë';
-
-  // Botë
-  if (/\bbotë\b|ndërkombëtar|europë\b|bashkim\s*europian|\beu\b|\bnato\b|\bonu\b|\bun\b|shba\b|shtetet\s*e\s*bashkuara|ukrainë|rusi|izrael|palestin|gaza\b|trump|biden|putin|zelenski|macron|scholz|erdogan|kinë|japoni|kore|siri|afganistan|irak|iran\b|libi|sudan|turqi/.test(t))
+  if (/\bbotë\b|ndërkombëtar|europë\b|bashkim\s*europian|\beu\b|\bnato\b|\bonu\b|shba\b|shtetet\s*e\s*bashkuara|ukrainë|rusi|izrael|palestin|gaza\b|trump|biden|putin|zelenski|macron|erdogan|kinë|japoni|siri|afganistan|irak|iran\b|libi|turqi/.test(t))
     return 'Botë';
-
-  // Ekonomi
-  if (/ekonomi|biznes|banka\b|bankë\b|inflacion|turizëm|eksport|import|treg\b|gdp\b|bpv\b|investim|kompani|korporat|aksion|bursë|kurs\s*këmbim|euro\b|dollar|lek\b|tatim|doganë|tregti|prodhim|punësim|papunësi|pagë\b|rritje\s*ekonomik|tkurrje|recesion|startup|sipërmarrje/.test(t))
+  if (/ekonomi|biznes|banka\b|bankë\b|inflacion|turizëm|eksport|import|treg\b|gdp\b|bpv\b|investim|kompani|aksion|bursë|kurs\s*këmbim|tatim|doganë|tregti|prodhim|punësim|papunësi|pagë\b|recesion|startup/.test(t))
     return 'Ekonomi';
-
-  // Kulturë
   if (/kulturë|art\b|muzikë|këngë|këngëtar|aktor|aktore|film\b|kinema|teatër|ekspozitë|libër|libra|shkrimtar|poet|poezia|festiv|koncert|albumin|albumit|premiere|galeri|arkitektur|trashëgimi/.test(t))
     return 'Kulturë';
-
-  // Opinion
   if (/opinion|koment\b|editorial|analiz|perspektiv|vëzhgim|debat\b/.test(t))
     return 'Opinion';
 
   return 'Lajme';
 }
 
-// ── Main scrape function ────────────────────────────────────────────────────
+// ── Mirror image → Vercel Blob (so FB CDN URLs don't expire) ───────────────
+async function mirrorImage(fbUrl, ts) {
+  if (!fbUrl) return '';
+  try {
+    const imgRes = await fetch(fbUrl);
+    if (!imgRes.ok) return fbUrl;
+    const buf  = Buffer.from(await imgRes.arrayBuffer());
+    if (buf.length < 500) return fbUrl;
+
+    const ext = fbUrl.includes('.png') ? 'png' : 'jpg';
+    const uploadRes = await fetch(`${VERCEL_URL}/api/admin/upload?filename=fb-${ts}.${ext}`, {
+      method:  'POST',
+      headers: {
+        'Content-Type':  `image/${ext}`,
+        'Authorization': `Bearer ${ADMIN_PASS}`,
+      },
+      body: buf,
+    });
+    if (!uploadRes.ok) return fbUrl;
+    const data = await uploadRes.json();
+    return data.url || fbUrl;
+  } catch (err) {
+    console.warn(`  ⚠️  Image mirror failed: ${err.message}`);
+    return fbUrl;
+  }
+}
+
+// ── Fetch posts from the Graph API ─────────────────────────────────────────
+async function fetchGraphPosts(limit = 30) {
+  const fields = [
+    'id',
+    'message',
+    'full_picture',
+    'attachments{type,media,url}',
+    'created_time',
+    'permalink_url',
+  ].join(',');
+
+  const url = `https://graph.facebook.com/${GRAPH_VER}/${FB_PAGE_ID}/posts` +
+    `?fields=${fields}&limit=${limit}&access_token=${FB_TOKEN}`;
+
+  const res  = await fetch(url);
+  const data = await res.json();
+
+  if (data.error) {
+    const e = data.error;
+    console.error(`❌ Graph API error [${e.code}]: ${e.message}`);
+    if (e.code === 190) {
+      console.error('   → Token expired or invalid. Set a new FB_PAGE_TOKEN.');
+      console.error('   → Get one at: https://developers.facebook.com/tools/explorer');
+    }
+    return [];
+  }
+
+  return data.data || [];
+}
+
+// ── Main scrape ─────────────────────────────────────────────────────────────
 async function scrape() {
-  let browser;
   const ts = new Date().toLocaleTimeString();
-  console.log(`\n[${ts}] 🚀 Starting scrape…`);
+  console.log(`\n[${ts}] 🚀 Graph API scrape starting…`);
+
+  if (!FB_TOKEN) {
+    console.error(`[${ts}] ❌ FB_PAGE_TOKEN is not set.`);
+    console.error('   Set it as a GitHub Actions secret and Vercel env variable.');
+    console.error('   Get a token at: https://developers.facebook.com/tools/explorer');
+    process.exit(1);
+  }
 
   try {
-    browser = await puppeteer.launch({
-      headless: 'new',
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-gpu',
-        '--window-size=1280,900',
-      ],
-    });
+    const fbPosts = await fetchGraphPosts(30);
+    console.log(`[${ts}] 📦 Fetched ${fbPosts.length} posts from Graph API`);
 
-    const page = await browser.newPage();
-    await page.setViewport({ width: 1280, height: 900 });
-    await page.setUserAgent(
-      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
-    );
-
-    // Load saved Facebook session cookies
-    const cookies = loadSession();
-    if (cookies.length) {
-      await page.setCookie(...cookies);
-      console.log(`[${ts}] 🍪 Loaded ${cookies.length} session cookies`);
-    } else {
-      console.log(`[${ts}] ⚠️  No session — run: node server/save-session.js`);
-    }
-
-    // Block fonts & audio/video streams — keep images for photo extraction
-    await page.setRequestInterception(true);
-    page.on('request', req => {
-      const type = req.resourceType();
-      if (type === 'font' || type === 'media') req.abort();
-      else req.continue();
-    });
-
-    console.log(`[${ts}] 🌐 Loading Facebook page…`);
-    // Use domcontentloaded — networkidle2 can hang on FB's live connections
-    await page.goto(FB_PAGE, { waitUntil: 'domcontentloaded', timeout: 60000 });
-
-    // Wait until at least one article appears (or 12s max)
-    try {
-      await page.waitForSelector('[role="article"]', { timeout: 12000 });
-      console.log(`[${ts}] ✅ Feed articles appeared`);
-    } catch {
-      console.log(`[${ts}] ⚠️  No articles found after 12s — may not be logged in`);
-    }
-    await new Promise(r => setTimeout(r, 3000)); // extra render time
-
-    // Dismiss any cookie-consent / login-redirect overlays
-    const currentUrl = page.url();
-    console.log(`[${ts}] 📍 URL after load: ${currentUrl}`);
-    if (!currentUrl.includes('facebook.com')) {
-      console.log(`[${ts}] ❌ Unexpected redirect — session invalid`);
-      return;
-    }
-    // Accept cookie consent if it appears (common on EU IPs)
-    try {
-      await page.evaluate(() => {
-        document.querySelectorAll('[data-cookiebanner] button, [data-testid*="cookie"] button').forEach(btn => {
-          if (/(accept|allow|okay|got it)/i.test(btn.innerText)) btn.click();
-        });
-      });
-      await new Promise(r => setTimeout(r, 1500));
-    } catch {}
-
-    // Scroll back to top first — newest posts are at the top of the feed
-    await page.evaluate(() => window.scrollTo(0, 0));
-    await new Promise(r => setTimeout(r, 1500));
-
-    // Slow scroll — gives lazy-loaded images time to resolve
-    console.log(`[${ts}] 📜 Scrolling to load posts…`);
-    for (let i = 0; i < 8; i++) {
-      try {
-        await page.evaluate(() => window.scrollBy(0, window.innerHeight * 1.5));
-      } catch { break; } // stop if page navigated away
-      await new Promise(r => setTimeout(r, 2000));
-    }
-
-    // Back to top so freshest posts are first
-    try {
-      await page.evaluate(() => window.scrollTo(0, 0));
-      await new Promise(r => setTimeout(r, 1500));
-    } catch {}
-
-    // Expand ALL truncated posts using real Puppeteer clicks (more reliable
-    // than in-page btn.click() which doesn't always fire in headless Chrome)
-    console.log(`[${ts}] 👆 Expanding truncated posts…`);
-    let expandCount = 0;
-    const expandBtns = await page.$$('[role="button"], div[tabindex="0"], span[role="button"]');
-    for (const btn of expandBtns) {
-      try {
-        const txt = await btn.evaluate(el => (el.innerText || el.textContent || '').trim());
-        if (/shiko\s*më\s*shumë|see\s*more/i.test(txt) && txt.length < 30) {
-          await btn.click({ delay: 30 });
-          expandCount++;
-          await new Promise(r => setTimeout(r, 400)); // small gap between clicks
-        }
-      } catch {}
-    }
-    console.log(`[${ts}] 👆 Clicked ${expandCount} expand button(s)`);
-    await new Promise(r => setTimeout(r, 4000)); // wait for all text to fully render
-
-    // Count total articles visible on page
-    const totalArticles = await page.evaluate(() =>
-      document.querySelectorAll('[role="article"]').length
-    );
-    console.log(`[${ts}] 🔍 Articles on page: ${totalArticles}`);
-
-    // ── Extract posts ───────────────────────────────────────────────────────
-    const raw = await page.evaluate(() => {
-      const results = [];
-
-      // UI/junk line patterns to strip from text
-      const JUNK_LINE = /^(Like|Comment|Share|Follow|More|Shpërnda|Koment|Pëlqej|Shiko\s|Reag|Write a|Shkruaj|Reply|Përgjigju|See\s|Translated|Shikuar|Sponsored|Reklamë|Send|Dërgo|\d+[hm]\b|\d+\s*(orë|min)|More reactions|Most relevant|All comments|Top comments|Previous|View \d|Shiko \d|Load more|Ngarko më)/i;
-
-      document.querySelectorAll('[role="article"]').forEach((el, idx) => {
-
-        // ── KEY FILTER: only accept posts AUTHORED by the page ───────────
-        // Every real Shekulli.info post has a link to "shekulli" in its
-        // header (the page-name anchor). Random commenter articles do NOT.
-        const html = el.innerHTML || '';
-        if (!/shekulli/i.test(html)) return;
-
-        // Also skip if this element is nested inside another [role="article"]
-        // (catches comments that DO somehow reference the page name)
-        let p = el.parentElement;
-        while (p) {
-          if (p.getAttribute && p.getAttribute('role') === 'article') return;
-          p = p.parentElement;
-        }
-
-        // ── TEXT ──────────────────────────────────────────────────────────
-        // Mark every node inside a nested comment article so we skip it.
-        const commentNodes = new Set();
-        el.querySelectorAll('[role="article"]').forEach(ca => {
-          ca.querySelectorAll('*').forEach(n => commentNodes.add(n));
-        });
-
-        function collectText(selector) {
-          const parts = [];
-          el.querySelectorAll(selector).forEach(d => {
-            if (commentNodes.has(d)) return;
-            const inCommentBox = d.closest('[aria-label*="omment"],[data-testid*="comment"]');
-            if (inCommentBox) return;
-            const t = (d.innerText || '').trim();
-            if (t.length > 5) parts.push(t);
-          });
-          return [...new Set(parts)].join('\n').trim();
-        }
-
-        // Try progressively broader selectors until we get real text
-        let text = collectText('[dir="auto"]');             // div+span with dir attr
-        if (text.length < 20) text = collectText('[data-ad-comet-preview="message"]');
-        if (text.length < 20) {
-          // Final fallback: full element text minus nested comment text
-          const commentText = Array.from(el.querySelectorAll('[role="article"]'))
-            .map(ca => (ca.innerText || '').trim()).join(' ');
-          text = (el.innerText || '').replace(commentText, '').trim();
-        }
-
-        // Clean FB UI artifacts and junk lines
-        text = text
-          .replace(/\s*(Shiko më shumë|See more|See More)\s*/gi, ' ')
-          .trim();
-        text = text.split('\n')
-          .map(l => l.trim())
-          .filter(l => l.length > 3 && !JUNK_LINE.test(l))
-          .join('\n')
-          .trim();
-
-        // ── IMAGE ─────────────────────────────────────────────────────────
-        // Skip avatar/profile-picture sized images (< 120px).
-        // Only accept images that are genuinely large (news photos).
-        let image = '';
-
-        for (const img of el.querySelectorAll('img')) {
-          const src = img.src || img.getAttribute('data-src') || '';
-          if (!src.startsWith('https') || !src.includes('scontent')) continue;
-          // Skip tiny avatars (profile pictures are typically 40–60px rendered)
-          const w = img.naturalWidth  || img.width  || 0;
-          const h = img.naturalHeight || img.height || 0;
-          if (w > 0 && w < 120) continue;
-          if (h > 0 && h < 120) continue;
-          image = src;
-          break;
-        }
-        // Fallback: any large https image (non-icon, non-static)
-        if (!image) {
-          for (const img of el.querySelectorAll('img')) {
-            const src = img.src || img.getAttribute('data-src') || '';
-            const w   = img.naturalWidth  || img.width  || 0;
-            const h   = img.naturalHeight || img.height || 0;
-            if (src.startsWith('https') &&
-                !src.includes('emoji') &&
-                !src.includes('rsrc.php') &&
-                !src.includes('/static/') &&
-                src.length > 80 &&
-                (w === 0 || w > 120) &&
-                (h === 0 || h > 120)) {
-              image = src; break;
-            }
-          }
-        }
-        // CSS background-image fallback
-        if (!image) {
-          for (const node of el.querySelectorAll('[style*="background-image"]')) {
-            const m = (node.style.backgroundImage || '').match(/url\(["']?(https[^"')]+)["']?\)/);
-            if (m?.[1] && !m[1].includes('data:')) { image = m[1]; break; }
-          }
-        }
-
-        // ── VIDEO ─────────────────────────────────────────────────────────
-        let hasVideo = false;
-        let postUrl  = '';
-
-        const videoEl = el.querySelector('video');
-        if (videoEl) {
-          hasVideo = true;
-          const poster = videoEl.getAttribute('poster') || '';
-          if (!image && poster) image = poster;
-        }
-
-        for (const a of el.querySelectorAll('a[href]')) {
-          const href = a.href || '';
-          if (/\/(videos|reel|posts)\/|[?&]v=\d|fb\.watch/i.test(href)) {
-            postUrl = href; break;
-          }
-        }
-        if (!hasVideo && /\/(videos|reel)\/|fb\.watch/i.test(postUrl)) hasVideo = true;
-
-        // ── TIMESTAMP ─────────────────────────────────────────────────────
-        let published = Date.now();
-        const abbr = el.querySelector('abbr[data-utime]');
-        if (abbr) published = parseInt(abbr.dataset.utime) * 1000;
-
-        // ── ID ────────────────────────────────────────────────────────────
-        const seed = (postUrl || text || image).slice(0, 50);
-        const id   = 'fb_' + idx + '_' +
-          btoa(encodeURIComponent(seed)).replace(/[^a-z0-9]/gi, '').slice(0, 16);
-
-        // ── QUALITY GATE ──────────────────────────────────────────────────
-        const hasMedia = !!(image || hasVideo);
-        if ((hasMedia && text.length >= 60) || text.length >= 200) {
-          results.push({ id, text, image, published, hasVideo, postUrl });
-        }
-      });
-
-      return results;
-    });
-
-    const goodPosts = raw;
-
-    console.log(`[${ts}] 📦 Found ${goodPosts.length} posts`);
-    if (goodPosts.length === 0) {
-      console.log(`[${ts}] ⚠️  0 posts — session may be expired or page rendered no content`);
+    if (fbPosts.length === 0) {
+      console.log(`[${ts}] ⚠️  No posts returned. Check token permissions.`);
       return;
     }
 
-    const withImg   = goodPosts.filter(p => p.image).length;
-    const withVideo = goodPosts.filter(p => p.hasVideo).length;
-    console.log(`[${ts}] 🖼  ${withImg}/${goodPosts.length} have images  📹 ${withVideo} videos`);
+    // Map Graph API posts → site article format
+    const posts = [];
+    for (const p of fbPosts) {
+      const rawText = (p.message || '').trim();
+      if (!rawText) continue; // photo-only post with no caption — skip
 
-    // ── Mirror images → Vercel Blob (permanent URLs, no FB expiry) ────────
-    console.log(`[${ts}] ☁️  Mirroring images to Vercel Blob…`);
-    for (const p of goodPosts) {
-      if (p.image) {
-        const mirrored = await mirrorImage(page, p.image, p.published);
-        if (mirrored !== p.image) {
-          console.log(`[${ts}]   ✅ Mirrored: …${mirrored.slice(-40)}`);
-        }
-        p.image = mirrored;
+      const cat   = guessCategory(rawText);
+      const lines = rawText.split('\n').map(l => l.trim()).filter(Boolean);
+
+      let title = (lines[0] || '').slice(0, 140).trim();
+      if (!title) title = '📷 Foto nga Shekulli.info';
+
+      const body       = lines.slice(1).join('\n').trim();
+      const standfirst = body.split('\n').slice(0, 2).join(' ').slice(0, 300);
+
+      // Video detection via attachments
+      let hasVideo = false;
+      const attachments = p.attachments?.data || [];
+      for (const att of attachments) {
+        if (/video/i.test(att.type || '')) { hasVideo = true; break; }
       }
-    }
 
-    // ── Map raw posts → article objects ───────────────────────────────────
-    const posts = goodPosts.map(p => {
-      const cat = guessCategory(p.text);
+      // Mirror image so it never expires
+      let photo = p.full_picture || '';
+      const published = new Date(p.created_time).getTime();
+      if (photo) {
+        const mirrored = await mirrorImage(photo, published);
+        if (mirrored !== photo) {
+          console.log(`[${ts}]   ✅ Mirrored image for post ${p.id}`);
+        }
+        photo = mirrored;
+      }
 
-      // Clean any leftover "See more" / "Shiko më shumë" and trailing ellipsis
-      const cleanText = (p.text || '')
-        .replace(/\.{2,}\s*(See more|Shiko më shumë)[^a-zA-Z]*/gi, '') // "... See more"
-        .replace(/\s*(See more|Shiko më shumë)\s*/gi, ' ')              // bare "See more"
-        .replace(/\s{2,}/g, ' ')
-        .trim();
+      // Quality gate: must have either real text or media
+      const hasMedia = !!(photo || hasVideo);
+      if (!hasMedia && body.length < 100 && rawText.length < 120) continue;
 
-      const lines = cleanText.split('\n').map(l => l.trim()).filter(Boolean);
-
-      // Title: first non-empty line, strip any trailing "..." artefact, max 140 chars
-      let title = (lines[0] || '').replace(/\.{2,}\s*$/, '').slice(0, 140);
-      if (!title) title = p.hasVideo ? '📹 Video nga Shekulli.info' : p.image ? '📷 Foto nga Shekulli.info' : '(pa titull)';
-
-      // Body: everything after the first line
-      const body = lines.slice(1).join('\n').trim();
-
-      // Standfirst: first 2 sentences of body, or first body line (not a copy of title)
-      const bodyLines = body.split('\n').filter(Boolean);
-      const standfirst = bodyLines.slice(0, 2).join(' ').slice(0, 300) || '';
-
-      return {
-        id:         p.id,
+      posts.push({
+        id:         `fb_${p.id}`,
+        fb_post_id: p.id,
         category:   cat,
         kicker:     cat.toUpperCase(),
         title,
         standfirst,
         body,
-        photo:      p.image  || '',
-        hasVideo:   p.hasVideo,
-        postUrl:    p.postUrl || '',
+        photo,
+        hasVideo,
+        postUrl:    p.permalink_url || `https://www.facebook.com/${p.id}`,
         author:     'Shekulli.info',
-        published:  p.published,
-      };
-    });
+        published,
+      });
+    }
 
-    // ── Push to Vercel KV ─────────────────────────────────────────────────
-    const res  = await fetch(`${VERCEL_URL}/api/admin/import`, {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${ADMIN_PASS}` },
-      body:    JSON.stringify({ posts }),
-    });
-    const data = await res.json();
-    console.log(`[${ts}] ✅ ${data.message}`);
+    console.log(`[${ts}] ✅ ${posts.length} posts ready to import`);
 
     // Log category breakdown
     const cats = {};
     posts.forEach(p => { cats[p.category] = (cats[p.category] || 0) + 1; });
     console.log(`[${ts}] 📊 Categories:`, JSON.stringify(cats));
 
+    // Push to Vercel KV
+    const res  = await fetch(`${VERCEL_URL}/api/admin/import`, {
+      method:  'POST',
+      headers: {
+        'Content-Type':  'application/json',
+        'Authorization': `Bearer ${ADMIN_PASS}`,
+      },
+      body: JSON.stringify({ posts }),
+    });
+    const data = await res.json();
+    console.log(`[${ts}] 📤 ${data.message}`);
+
   } catch (err) {
-    console.error(`[${ts}] ❌ Error:`, err.message);
-  } finally {
-    if (browser) await browser.close();
+    console.error(`[${ts}] ❌ Unexpected error:`, err.message);
   }
 }
 
-// ── Entry point ───────────────────────────────────────────────────────────
+// ── Entry point ─────────────────────────────────────────────────────────────
 scrape();
 if (process.argv.includes('--watch')) {
-  console.log(`\n👁  Watch mode — scraping every 1 minute. Press Ctrl+C to stop.\n`);
+  console.log(`\n👁  Watch mode — scraping every 5 minutes. Press Ctrl+C to stop.\n`);
   setInterval(scrape, WATCH_INTERVAL);
 }

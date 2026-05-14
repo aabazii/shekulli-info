@@ -160,23 +160,45 @@ async function scrape() {
     });
 
     console.log(`[${ts}] 🌐 Loading Facebook page…`);
-    await page.goto(FB_PAGE, { waitUntil: 'networkidle2', timeout: 60000 });
+    // Use domcontentloaded — networkidle2 can hang on FB's live connections
+    await page.goto(FB_PAGE, { waitUntil: 'domcontentloaded', timeout: 60000 });
+    await new Promise(r => setTimeout(r, 4000)); // let JS render the feed
+
+    // Dismiss any cookie-consent / login-redirect overlays
+    const currentUrl = page.url();
+    console.log(`[${ts}] 📍 URL after load: ${currentUrl}`);
+    if (!currentUrl.includes('facebook.com')) {
+      console.log(`[${ts}] ❌ Unexpected redirect — session invalid`);
+      return;
+    }
+    // Accept cookie consent if it appears (common on EU IPs)
+    try {
+      await page.evaluate(() => {
+        document.querySelectorAll('[data-cookiebanner] button, [data-testid*="cookie"] button').forEach(btn => {
+          if (/(accept|allow|okay|got it)/i.test(btn.innerText)) btn.click();
+        });
+      });
+      await new Promise(r => setTimeout(r, 1500));
+    } catch {}
 
     // Scroll back to top first — newest posts are at the top of the feed
     await page.evaluate(() => window.scrollTo(0, 0));
-    await new Promise(r => setTimeout(r, 2000));
+    await new Promise(r => setTimeout(r, 1500));
 
     // Slow scroll — gives lazy-loaded images time to resolve
-    // 8 passes (was 6) ensures we capture ~10-12 posts reliably
     console.log(`[${ts}] 📜 Scrolling to load posts…`);
     for (let i = 0; i < 8; i++) {
-      await page.evaluate(() => window.scrollBy(0, window.innerHeight * 1.5));
-      await new Promise(r => setTimeout(r, 2500));
+      try {
+        await page.evaluate(() => window.scrollBy(0, window.innerHeight * 1.5));
+      } catch { break; } // stop if page navigated away
+      await new Promise(r => setTimeout(r, 2000));
     }
 
-    // Scroll back to top so the freshest posts are captured first
-    await page.evaluate(() => window.scrollTo(0, 0));
-    await new Promise(r => setTimeout(r, 1500));
+    // Back to top so freshest posts are first
+    try {
+      await page.evaluate(() => window.scrollTo(0, 0));
+      await new Promise(r => setTimeout(r, 1500));
+    } catch {}
 
     // Expand all truncated posts ("Shiko më shumë" / "See more")
     console.log(`[${ts}] 👆 Expanding truncated posts…`);

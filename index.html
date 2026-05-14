@@ -255,10 +255,11 @@
             const d = new Date(m.utcDate);
             const today2 = new Date();
             const isToday = d.toDateString() === today2.toDateString();
+            const tz = 'Europe/Belgrade'; // Kosovo timezone (UTC+1/+2)
             const dateStr = isToday
-              ? d.toLocaleTimeString('sq-AL', { hour: '2-digit', minute: '2-digit' })
-              : d.toLocaleDateString('sq-AL', { day: 'numeric', month: 'short' }) + ' ' +
-                d.toLocaleTimeString('sq-AL', { hour: '2-digit', minute: '2-digit' });
+              ? d.toLocaleTimeString('sq-AL', { hour: '2-digit', minute: '2-digit', timeZone: tz })
+              : d.toLocaleDateString('sq-AL', { day: 'numeric', month: 'short', timeZone: tz }) + ' ' +
+                d.toLocaleTimeString('sq-AL', { hour: '2-digit', minute: '2-digit', timeZone: tz });
 
             let scoreHtml = '';
             if (isLive) {

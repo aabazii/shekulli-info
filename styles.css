@@ -61,7 +61,7 @@ ol {
   position: sticky;
   top: 0;
   z-index: 50;
-  background: linear-gradient(to right, #ffffff 0%, #ddeaff 35%, #b8d0ff 50%, #ddeaff 65%, #ffffff 100%);
+  background: linear-gradient(to right, #ffffff 0%, #c8deff 25%, #7aadff 50%, #c8deff 75%, #ffffff 100%);
 }
 
 .masthead__top {
@@ -147,6 +147,7 @@ ol {
   margin: 0 auto;
   padding: 0 var(--gutter);
   display: flex;
+  justify-content: center;
   gap: 0;
   border-top: 1px solid var(--rule);
   overflow-x: auto;

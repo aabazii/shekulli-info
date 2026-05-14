@@ -220,22 +220,11 @@ async function scrape() {
     });
     await new Promise(r => setTimeout(r, 2000));
 
-    // ── Debug: how many articles on page, and what do they look like? ────
-    const debugInfo = await page.evaluate(() => {
-      const articles = document.querySelectorAll('[role="article"]');
-      return {
-        total: articles.length,
-        sample: Array.from(articles).slice(0, 3).map(el => ({
-          textSnippet: (el.innerText || '').slice(0, 120).replace(/\n/g, ' '),
-          hasShekull: /shekulli/i.test(el.innerHTML),
-          htmlSnippet: el.innerHTML.slice(0, 200),
-        })),
-      };
-    });
-    console.log(`[${ts}] 🔍 Articles on page: ${debugInfo.total}`);
-    debugInfo.sample.forEach((s, i) =>
-      console.log(`[${ts}]   [${i}] hasShekull:${s.hasShekull} | "${s.textSnippet}"`)
+    // Count total articles visible on page
+    const totalArticles = await page.evaluate(() =>
+      document.querySelectorAll('[role="article"]').length
     );
+    console.log(`[${ts}] 🔍 Articles on page: ${totalArticles}`);
 
     // ── Extract posts ───────────────────────────────────────────────────────
     const raw = await page.evaluate(() => {
@@ -371,24 +360,17 @@ async function scrape() {
 
         // ── QUALITY GATE ──────────────────────────────────────────────────
         const hasMedia = !!(image || hasVideo);
-        const passes = (hasMedia && text.length >= 60) || text.length >= 200;
-        // Debug every shekulli-authored article so we can see what passes/fails
-        results.push({ id, text, image, published, hasVideo, postUrl, _passes: passes, _textLen: text.length, _hasMedia: hasMedia });
+        if ((hasMedia && text.length >= 60) || text.length >= 200) {
+          results.push({ id, text, image, published, hasVideo, postUrl });
+        }
       });
 
       return results;
     });
 
-    // Log debug info for every candidate, then filter
-    raw.forEach((p, i) => {
-      console.log(`[${ts}] 📝 [${i}] passes:${p._passes} | textLen:${p._textLen} | hasMedia:${p._hasMedia} | "${(p.text||'').slice(0,80).replace(/\n/g,' ')}"`);
-    });
-    const goodPosts = raw.filter(p => p._passes);
-    // Clean debug fields
-    goodPosts.forEach(p => { delete p._passes; delete p._textLen; delete p._hasMedia; });
+    const goodPosts = raw;
 
-    const totalCandidates = raw.length;
-    console.log(`[${ts}] 📦 Found ${goodPosts.length} posts (${totalCandidates} candidates)`);
+    console.log(`[${ts}] 📦 Found ${goodPosts.length} posts`);
     if (totalCandidates === 0) {
       console.log(`[${ts}] ⚠️  0 articles — session may have expired. Run: node server/save-session.js`);
       return;

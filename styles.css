@@ -213,24 +213,39 @@ ol {
 
 .ticker__items {
   flex: 1;
+  min-width: 0;
   overflow: hidden;
   position: relative;
-  padding: 0;
 }
 
 .ticker__track {
-  display: flex;
-  gap: 56px;
+  display: inline-flex;
+  align-items: center;
+  gap: 48px;
   white-space: nowrap;
   font-size: 13px;
   color: var(--ink-1);
-  padding: 10px 0;
-  animation: ticker-scroll 30s linear infinite;
-  width: max-content;
+  padding: 10px 24px 10px 0;
+  animation: ticker-scroll 35s linear infinite;
+  will-change: transform;
 }
 
 .ticker__track:hover {
   animation-play-state: paused;
+}
+
+.ticker__item {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+}
+
+/* separator dot between items */
+.ticker__item + .ticker__item::before {
+  content: '·';
+  margin-right: 48px;
+  color: var(--ink-3);
 }
 
 @keyframes ticker-scroll {

@@ -161,11 +161,16 @@
         return span;
       }
 
-      // Add items twice so the loop is seamless
-      tickerPosts.forEach(a => track.appendChild(makeTickerItem(a)));
-      tickerPosts.forEach(a => track.appendChild(makeTickerItem(a)));
+      // Duplicate items so the loop is seamless
+      [tickerPosts, tickerPosts].forEach(set =>
+        set.forEach(a => track.appendChild(makeTickerItem(a)))
+      );
 
       tickerWrap.appendChild(track);
+      // Adjust speed based on content width for consistent scroll rate
+      const totalW = track.scrollWidth;
+      const speed = Math.max(20, totalW / 80); // ~80px/s
+      track.style.animationDuration = speed + 's';
 
       /* Most-read rail */
       const mostRead = document.getElementById('most-read');

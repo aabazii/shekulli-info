@@ -261,21 +261,33 @@ async function scrape() {
         }
 
         // ── TEXT ──────────────────────────────────────────────────────────
-        // Collect text only from the post's own dir="auto" divs.
-        // Exclude divs that belong to nested comment articles.
-        const commentDivs = new Set();
-        el.querySelectorAll('[role="article"] div[dir="auto"]').forEach(d => commentDivs.add(d));
-
-        const textParts = [];
-        el.querySelectorAll('div[dir="auto"]').forEach(d => {
-          if (commentDivs.has(d)) return;
-          const inCommentList = d.closest('[aria-label*="omment"],[aria-label*="omento"],[data-testid*="comment"]');
-          if (inCommentList) return;
-          const t = (d.innerText || '').trim();
-          if (t.length > 5) textParts.push(t);
+        // Mark every node inside a nested comment article so we skip it.
+        const commentNodes = new Set();
+        el.querySelectorAll('[role="article"]').forEach(ca => {
+          ca.querySelectorAll('*').forEach(n => commentNodes.add(n));
         });
 
-        let text = [...new Set(textParts)].join('\n').trim();
+        function collectText(selector) {
+          const parts = [];
+          el.querySelectorAll(selector).forEach(d => {
+            if (commentNodes.has(d)) return;
+            const inCommentBox = d.closest('[aria-label*="omment"],[data-testid*="comment"]');
+            if (inCommentBox) return;
+            const t = (d.innerText || '').trim();
+            if (t.length > 5) parts.push(t);
+          });
+          return [...new Set(parts)].join('\n').trim();
+        }
+
+        // Try progressively broader selectors until we get real text
+        let text = collectText('[dir="auto"]');             // div+span with dir attr
+        if (text.length < 20) text = collectText('[data-ad-comet-preview="message"]');
+        if (text.length < 20) {
+          // Final fallback: full element text minus nested comment text
+          const commentText = Array.from(el.querySelectorAll('[role="article"]'))
+            .map(ca => (ca.innerText || '').trim()).join(' ');
+          text = (el.innerText || '').replace(commentText, '').trim();
+        }
 
         // Clean FB UI artifacts and junk lines
         text = text

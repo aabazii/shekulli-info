@@ -24,42 +24,15 @@ const FB_APP_ID   = process.env.FB_APP_ID;
 const FB_APP_SECRET = process.env.FB_APP_SECRET;
 const WATCH_INTERVAL = 5 * 60 * 1000; // 5 minutes
 
-// ── Exchange a short-lived token for a never-expiring Page token ────────────
-// Steps: short-lived user token → long-lived user token → permanent page token
-async function resolvePageToken(token) {
-  // Step 1: exchange for long-lived user token (if app credentials available)
-  let workingToken = token;
+// ── Resolve the best available token ─────────────────────────────────────────
+// App Access Token (APP_ID|APP_SECRET) never expires and reads public pages.
+// Falls back to FB_PAGE_TOKEN if app credentials are missing.
+function resolvePageToken() {
   if (FB_APP_ID && FB_APP_SECRET) {
-    const ltRes = await fetch(
-      `https://graph.facebook.com/${GRAPH_VER}/oauth/access_token` +
-      `?grant_type=fb_exchange_token&client_id=${FB_APP_ID}` +
-      `&client_secret=${FB_APP_SECRET}&fb_exchange_token=${token}`
-    );
-    const ltData = await ltRes.json();
-    if (ltData.access_token) {
-      workingToken = ltData.access_token;
-      console.log('🔄 Exchanged for long-lived user token');
-    }
+    console.log('🔑 Using App Access Token (never expires)');
+    return `${FB_APP_ID}|${FB_APP_SECRET}`;
   }
-
-  // Step 2: get the permanent Page token from /me/accounts
-  const acctRes  = await fetch(`https://graph.facebook.com/${GRAPH_VER}/me/accounts?access_token=${workingToken}`);
-  const acctData = await acctRes.json();
-
-  if (acctData.data) {
-    for (const page of acctData.data) {
-      if (/shekulli/i.test(page.name) || /shekulli/i.test(page.id)) {
-        console.log(`🔑 Got permanent page token for: ${page.name}`);
-        return page.access_token;
-      }
-    }
-    if (acctData.data.length > 0) {
-      console.log(`🔑 Got permanent page token for: ${acctData.data[0].name}`);
-      return acctData.data[0].access_token;
-    }
-  }
-
-  return workingToken;
+  return FB_TOKEN;
 }
 
 // ── Category detection ──────────────────────────────────────────────────────
@@ -188,16 +161,13 @@ async function scrape() {
   const ts = new Date().toLocaleTimeString();
   console.log(`\n[${ts}] 🚀 Graph API scrape starting…`);
 
-  if (!FB_TOKEN) {
-    console.error(`[${ts}] ❌ FB_PAGE_TOKEN is not set.`);
-    console.error('   Set it as a GitHub Actions secret and Vercel env variable.');
-    console.error('   Get a token at: https://developers.facebook.com/tools/explorer');
+  if (!FB_TOKEN && !(FB_APP_ID && FB_APP_SECRET)) {
+    console.error(`[${ts}] ❌ No Facebook credentials. Set FB_APP_ID + FB_APP_SECRET (recommended) or FB_PAGE_TOKEN.`);
     process.exit(1);
   }
 
   try {
-    // Auto-exchange User token → Page token if needed
-    const pageToken = await resolvePageToken(FB_TOKEN);
+    const pageToken = resolvePageToken();
     const fbPosts = await fetchGraphPosts(30, pageToken);
     console.log(`[${ts}] 📦 Fetched ${fbPosts.length} posts from Graph API`);
 

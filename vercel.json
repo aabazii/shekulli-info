@@ -1,21 +1,14 @@
 {
   "framework": null,
-  "buildCommand": null,
-  "outputDirectory": ".",
   "installCommand": "npm install",
   "cleanUrls": true,
+  "trailingSlash": false,
   "functions": {
-    "api/admin/upload.js": { "maxDuration": 30 }
+    "api/admin/upload.js": { "maxDuration": 60 },
+    "api/admin/import.js": { "maxDuration": 60 },
+    "api/scrape.js":       { "maxDuration": 60 }
   },
-  "rewrites": [
-    { "source": "/api/articles",             "destination": "/api/articles" },
-    { "source": "/api/health",               "destination": "/api/health" },
-    { "source": "/api/admin/import",         "destination": "/api/admin/import" },
-    { "source": "/api/admin/fix-timestamps", "destination": "/api/admin/fix-timestamps" },
-    { "source": "/api/admin/delete",         "destination": "/api/admin/delete" },
-    { "source": "/api/admin/upload",         "destination": "/api/admin/upload" },
-    { "source": "/api/admin/clear",          "destination": "/api/admin/clear" },
-    { "source": "/api/admin/fix-posts",      "destination": "/api/admin/fix-posts" },
-    { "source": "/api/fixtures",             "destination": "/api/fixtures" }
+  "crons": [
+    { "path": "/api/scrape", "schedule": "*/5 * * * *" }
   ]
 }

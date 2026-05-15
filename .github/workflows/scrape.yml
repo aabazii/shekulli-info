@@ -2,28 +2,18 @@ name: Scrape Facebook Posts
 
 on:
   schedule:
-    - cron: '* * * * *'      # every 1 minute
-  workflow_dispatch:          # manual trigger from GitHub UI
+    - cron: '*/10 * * * *'   # every 10 min (backup to Vercel cron)
+  workflow_dispatch:
 
 jobs:
   scrape:
     runs-on: ubuntu-latest
-    timeout-minutes: 3        # Graph API is fast — 3 min is plenty
+    timeout-minutes: 2
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-
-      - name: Run scraper
-        env:
-          FB_PAGE_TOKEN: ${{ secrets.FB_PAGE_TOKEN }}
-          FB_APP_ID: ${{ secrets.FB_APP_ID }}
-          FB_APP_SECRET: ${{ secrets.FB_APP_SECRET }}
-          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
-          VERCEL_URL: https://shekulli.vercel.app
-        run: node server/run-scraper.js
+      - name: Trigger Vercel scrape
+        run: |
+          curl -sf -X POST \
+            -H "Authorization: Bearer ${{ secrets.ADMIN_PASSWORD }}" \
+            https://shekulli.vercel.app/api/scrape \
+            | cat

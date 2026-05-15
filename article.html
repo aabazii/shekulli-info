@@ -98,6 +98,13 @@
       } else {
         document.title = article.title + ' — Shekulli.info';
 
+        // Track view
+        fetch('/api/views', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: article.id })
+        }).catch(() => {});
+
         /* Mark active nav item */
         document.querySelectorAll('.masthead__nav-item').forEach(a => {
           const url = new URL(a.href, location.href);

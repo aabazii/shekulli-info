@@ -155,12 +155,25 @@
 
       /* Most-read rail */
       const mostRead = document.getElementById('most-read');
-      all.slice(0, 5).forEach((a, i) => {
-        const li = document.createElement('li');
-        li.className = 'most-read__row';
-        li.innerHTML = `<span class="most-read__num">${i + 1}</span><a href="article?id=${a.id}" class="most-read__title">${a.title}</a>`;
-        mostRead.appendChild(li);
-      });
+      function renderMostRead(articles) {
+        mostRead.innerHTML = '';
+        articles.slice(0, 5).forEach((a, i) => {
+          const li = document.createElement('li');
+          li.className = 'most-read__row';
+          li.innerHTML = `<span class="most-read__num">${i + 1}</span><a href="article?id=${a.id}" class="most-read__title">${a.title}</a>`;
+          mostRead.appendChild(li);
+        });
+      }
+      // Try to load real view counts; fall back to most recent
+      fetch('/api/views?limit=5')
+        .then(r => r.json())
+        .then(({ ids }) => {
+          if (!ids || ids.length < 3) return renderMostRead(all);
+          const byId = Object.fromEntries(all.map(a => [a.id, a]));
+          const viewed = ids.map(id => byId[id]).filter(Boolean);
+          renderMostRead(viewed.length >= 3 ? viewed : all);
+        })
+        .catch(() => renderMostRead(all));
 
       function sectionStrip(cat) {
         return `<div class="section-strip">

@@ -47,6 +47,14 @@ ol {
   display: none;
 }
 
+.masthead__nav-search {
+  color: #7ab3e8;
+  margin-right: 22px;
+  width: 32px;
+  height: auto;
+  padding: 12px 0;
+}
+
 .icon-btn:hover {
   background: var(--paper-3);
   color: var(--brand-red);

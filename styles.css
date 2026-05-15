@@ -755,7 +755,7 @@ ol {
 
   /* Masthead */
   .masthead__top {
-    grid-template-columns: 1fr auto;
+    grid-template-columns: 1fr auto 1fr;
     padding: 10px var(--gutter) 6px;
   }
 

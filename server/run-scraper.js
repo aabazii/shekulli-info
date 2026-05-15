@@ -207,14 +207,16 @@ async function scrape() {
       const rawText = (p.message || '').trim();
       if (!rawText) continue; // photo-only post with no caption — skip
 
-      const cat   = guessCategory(rawText);
-      const lines = clean(rawText).split('\n').map(l => l.trim()).filter(Boolean);
+      const cat      = guessCategory(rawText);
+      const fullText = clean(rawText);
+      const lines    = fullText.split('\n').map(l => l.trim()).filter(Boolean);
 
       let title = (lines[0] || '').slice(0, 140).trim();
       if (!title) title = '📷 Foto nga Shekulli.info';
 
-      const body       = clean(lines.slice(1).join('\n'));
-      const standfirst = body.split('\n').slice(0, 2).join(' ').slice(0, 300);
+      // If the post is a single paragraph, body = full text so nothing is lost
+      const body       = lines.length > 1 ? lines.slice(1).join('\n') : fullText;
+      const standfirst = body.slice(0, 300);
 
       // Video detection via attachments
       let hasVideo = false;

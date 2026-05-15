@@ -65,7 +65,7 @@ module.exports = async function handler(req, res) {
         category:   cat,
         kicker:     cat.toUpperCase(),
         title:      clean(p.title || text.slice(0, 140)),
-        standfirst: clean(p.standfirst || text.slice(0, 300)),
+        standfirst: clean(p.standfirst || (p.body || text).slice(0, 300)),
         body:       clean(p.body || text),
         photo:      p.photo || p.image || '',
         hasVideo:   p.hasVideo || false,

@@ -592,8 +592,18 @@ ol {
   margin: 0 auto;
   padding: 0 var(--gutter);
   display: grid;
-  grid-template-columns: 1.4fr repeat(3, 1fr);
+  grid-template-columns: 1.6fr 2fr 1fr 1fr;
   gap: 40px;
+}
+
+.footer__col--categories {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 16px;
+}
+
+.footer__col--categories h4 {
+  grid-column: 1 / -1;
 }
 
 .footer__brand {

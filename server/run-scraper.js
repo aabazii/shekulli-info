@@ -20,41 +20,46 @@ const FB_PAGE_ID  = 'shekulliinfo';
 const VERCEL_URL  = process.env.VERCEL_URL     || 'https://shekulli.vercel.app';
 const ADMIN_PASS  = process.env.ADMIN_PASSWORD  || 'shekulli2026';
 const FB_TOKEN    = process.env.FB_PAGE_TOKEN;
+const FB_APP_ID   = process.env.FB_APP_ID;
+const FB_APP_SECRET = process.env.FB_APP_SECRET;
 const WATCH_INTERVAL = 5 * 60 * 1000; // 5 minutes
 
-// ── Get a Page Access Token from either a User token or Page token ──────────
-// If given a User token, exchanges it for the Shekulli.info page token.
+// ── Exchange a short-lived token for a never-expiring Page token ────────────
+// Steps: short-lived user token → long-lived user token → permanent page token
 async function resolvePageToken(token) {
-  // First check if it's already a page token by calling /me
-  const meRes  = await fetch(`https://graph.facebook.com/${GRAPH_VER}/me?access_token=${token}`);
-  const meData = await meRes.json();
-  if (meData.error) return token; // can't resolve — just try as-is
-
-  // If /me returns a page (not a user), we already have a page token
-  if (!meData.name?.match(/^[A-Z][a-z]+ [A-Z][a-z]+$/) && meData.id) {
-    // Looks like a page token already
+  // Step 1: exchange for long-lived user token (if app credentials available)
+  let workingToken = token;
+  if (FB_APP_ID && FB_APP_SECRET) {
+    const ltRes = await fetch(
+      `https://graph.facebook.com/${GRAPH_VER}/oauth/access_token` +
+      `?grant_type=fb_exchange_token&client_id=${FB_APP_ID}` +
+      `&client_secret=${FB_APP_SECRET}&fb_exchange_token=${token}`
+    );
+    const ltData = await ltRes.json();
+    if (ltData.access_token) {
+      workingToken = ltData.access_token;
+      console.log('🔄 Exchanged for long-lived user token');
+    }
   }
 
-  // Try to get the page token from /me/accounts (works for user tokens)
-  const acctRes  = await fetch(`https://graph.facebook.com/${GRAPH_VER}/me/accounts?access_token=${token}`);
+  // Step 2: get the permanent Page token from /me/accounts
+  const acctRes  = await fetch(`https://graph.facebook.com/${GRAPH_VER}/me/accounts?access_token=${workingToken}`);
   const acctData = await acctRes.json();
 
   if (acctData.data) {
     for (const page of acctData.data) {
       if (/shekulli/i.test(page.name) || /shekulli/i.test(page.id)) {
-        console.log(`🔑 Resolved page token for: ${page.name}`);
+        console.log(`🔑 Got permanent page token for: ${page.name}`);
         return page.access_token;
       }
     }
-    // If shekulliinfo not found by name, just try first page
     if (acctData.data.length > 0) {
-      console.log(`🔑 Using page token for: ${acctData.data[0].name}`);
+      console.log(`🔑 Got permanent page token for: ${acctData.data[0].name}`);
       return acctData.data[0].access_token;
     }
   }
 
-  // Fall back to original token
-  return token;
+  return workingToken;
 }
 
 // ── Category detection ──────────────────────────────────────────────────────

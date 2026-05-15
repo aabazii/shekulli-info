@@ -3,8 +3,50 @@ const { kv } = require('@vercel/kv');
 const GRAPH_VER    = 'v21.0';
 const FB_PAGE_ID   = 'shekulliinfo';
 const FB_TOKEN     = process.env.FB_PAGE_TOKEN;
+const FB_APP_ID    = process.env.FB_APP_ID;
+const FB_APP_SECRET = process.env.FB_APP_SECRET;
 const ADMIN_PASS   = process.env.ADMIN_PASSWORD || 'shekulli2026';
 const VERCEL_URL   = process.env.VERCEL_URL || 'https://shekulli.vercel.app';
+
+// ── Token resolution — stores permanent page token in KV so it survives restarts
+async function resolveToken() {
+  // 1. Check KV for a cached permanent token
+  const cached = await kv.get('fb_permanent_token');
+  if (cached) return cached;
+
+  // 2. Try to exchange FB_TOKEN for a permanent page token
+  if (!FB_TOKEN) return null;
+  if (!FB_APP_ID || !FB_APP_SECRET) return FB_TOKEN;
+
+  try {
+    // Exchange short-lived → long-lived user token
+    const ltRes = await fetch(
+      `https://graph.facebook.com/${GRAPH_VER}/oauth/access_token` +
+      `?grant_type=fb_exchange_token&client_id=${FB_APP_ID}` +
+      `&client_secret=${FB_APP_SECRET}&fb_exchange_token=${FB_TOKEN}`
+    );
+    const ltData = await ltRes.json();
+    if (!ltData.access_token) return FB_TOKEN;
+
+    // Get permanent page token via /me/accounts
+    const acctRes = await fetch(
+      `https://graph.facebook.com/${GRAPH_VER}/me/accounts?access_token=${ltData.access_token}`
+    );
+    const acctData = await acctRes.json();
+    if (!acctData.data?.length) return ltData.access_token;
+
+    const page = acctData.data.find(p => /shekulli/i.test(p.name)) || acctData.data[0];
+    const permanentToken = page.access_token;
+
+    // Store in KV permanently — never needs to be exchanged again
+    await kv.set('fb_permanent_token', permanentToken);
+    console.log(`🔑 Stored permanent page token for: ${page.name}`);
+    return permanentToken;
+  } catch (e) {
+    console.warn('Token exchange failed, using FB_TOKEN directly:', e.message);
+    return FB_TOKEN;
+  }
+}
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -73,22 +115,38 @@ module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  // Accept GET (cron-job.org) or POST
   const auth = (req.headers.authorization || '').replace('Bearer ', '');
   const isVercelCron = req.headers['x-vercel-cron'] === '1';
   if (!isVercelCron && auth !== ADMIN_PASS) {
     return res.status(401).json({ ok: false, message: 'Unauthorized' });
   }
 
-  if (!FB_TOKEN) {
-    return res.status(500).json({ ok: false, message: 'FB_PAGE_TOKEN not set' });
+  // ?reset=token clears the cached permanent token so next run re-exchanges
+  if (req.query?.reset === 'token') {
+    await kv.del('fb_permanent_token');
+    return res.json({ ok: true, message: 'Cached token cleared — will re-exchange on next scrape' });
   }
 
   try {
-    const fbPosts = await fetchPosts(FB_TOKEN);
+    const token = await resolveToken();
+    if (!token) {
+      return res.status(500).json({ ok: false, message: 'FB_PAGE_TOKEN not set' });
+    }
+
+    let fbPosts;
+    try {
+      fbPosts = await fetchPosts(token);
+    } catch (tokenErr) {
+      // Token invalid — clear cached token so next run re-exchanges with FB_TOKEN
+      if (tokenErr.code === 190) {
+        await kv.del('fb_permanent_token');
+        console.log('⚠️  Token invalid (190) — cleared cache, will re-exchange next run');
+      }
+      throw tokenErr;
+    }
 
     if (fbPosts.length === 0) {
-      return res.json({ ok: true, message: 'No posts from API (token may be invalid)' });
+      return res.json({ ok: true, message: 'No posts from API' });
     }
 
     // Process posts

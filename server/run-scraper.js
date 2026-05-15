@@ -140,6 +140,14 @@ async function mirrorImage(fbUrl, ts) {
   }
 }
 
+// ── Strip Facebook UI artifacts from post text ─────────────────────────────
+function clean(text) {
+  return (text || '')
+    .replace(/\s*(\.{3}|…)\s*(see\s*more|shiko\s*më\s*shumë)\s*/gi, '')
+    .replace(/\s*(see\s*more|shiko\s*më\s*shumë)\s*/gi, '')
+    .trim();
+}
+
 // ── Fetch posts from the Graph API ─────────────────────────────────────────
 async function fetchGraphPosts(limit = 30, token = FB_TOKEN) {
   const fields = [
@@ -200,12 +208,12 @@ async function scrape() {
       if (!rawText) continue; // photo-only post with no caption — skip
 
       const cat   = guessCategory(rawText);
-      const lines = rawText.split('\n').map(l => l.trim()).filter(Boolean);
+      const lines = clean(rawText).split('\n').map(l => l.trim()).filter(Boolean);
 
       let title = (lines[0] || '').slice(0, 140).trim();
       if (!title) title = '📷 Foto nga Shekulli.info';
 
-      const body       = lines.slice(1).join('\n').trim();
+      const body       = clean(lines.slice(1).join('\n'));
       const standfirst = body.split('\n').slice(0, 2).join(' ').slice(0, 300);
 
       // Video detection via attachments

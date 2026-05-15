@@ -2,6 +2,13 @@ const { kv } = require('@vercel/kv');
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'shekulli2026';
 
+function clean(text) {
+  return (text || '')
+    .replace(/\s*(\.{3}|…)\s*(see\s*more|shiko\s*më\s*shumë)\s*/gi, '')
+    .replace(/\s*(see\s*more|shiko\s*më\s*shumë)\s*/gi, '')
+    .trim();
+}
+
 function guessCategory(text) {
   const t  = (text || '').toLowerCase();
   const ht = (text || '');
@@ -57,9 +64,9 @@ module.exports = async function handler(req, res) {
         fb_post_id: String(p.id),
         category:   cat,
         kicker:     cat.toUpperCase(),
-        title:      p.title || text.slice(0, 140),
-        standfirst: p.standfirst || text.slice(0, 300),
-        body:       p.body || text,
+        title:      clean(p.title || text.slice(0, 140)),
+        standfirst: clean(p.standfirst || text.slice(0, 300)),
+        body:       clean(p.body || text),
         photo:      p.photo || p.image || '',
         hasVideo:   p.hasVideo || false,
         postUrl:    p.postUrl || '',

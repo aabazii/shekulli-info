@@ -749,6 +749,10 @@ ol {
     display: inline-flex;
   }
 
+  .masthead__nav {
+    display: none;
+  }
+
   /* Masthead */
   .masthead__top {
     grid-template-columns: 1fr auto;

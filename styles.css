@@ -858,8 +858,7 @@ ol {
     padding: 16px !important;
   }
 
-  /* Category page — title-only list on mobile */
-  #cat-articles .story__photo,
+  /* Category page — photo + title only on mobile */
   #cat-articles .deck,
   #cat-articles .standfirst,
   #cat-articles .kicker,

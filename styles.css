@@ -857,6 +857,47 @@ ol {
     grid-template-columns: 1fr !important;
     padding: 16px !important;
   }
+
+  /* Category page — title-only list on mobile */
+  #cat-articles .story__photo,
+  #cat-articles .deck,
+  #cat-articles .standfirst,
+  #cat-articles .kicker,
+  #cat-articles .meta {
+    display: none !important;
+  }
+
+  #cat-articles .story,
+  #cat-articles a.story {
+    display: block !important;
+    border-top: 1px solid var(--rule);
+    border-bottom: none;
+    padding: 14px 0;
+    margin: 0;
+  }
+
+  #cat-articles .story__copy {
+    padding: 0;
+  }
+
+  #cat-articles .story__headline {
+    font-size: 16px;
+    line-height: 1.4;
+    margin: 0;
+  }
+
+  #cat-articles .grid-2 {
+    display: block;
+  }
+
+  /* Category page rail hidden on mobile — full width articles */
+  .cat-layout {
+    grid-template-columns: 1fr !important;
+  }
+
+  .cat-layout .home__rail {
+    display: none;
+  }
 }
 
 /* ============================================================

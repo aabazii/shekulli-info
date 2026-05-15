@@ -24,15 +24,41 @@ const FB_APP_ID   = process.env.FB_APP_ID;
 const FB_APP_SECRET = process.env.FB_APP_SECRET;
 const WATCH_INTERVAL = 5 * 60 * 1000; // 5 minutes
 
-// ── Resolve the best available token ─────────────────────────────────────────
-// App Access Token (APP_ID|APP_SECRET) never expires and reads public pages.
-// Falls back to FB_PAGE_TOKEN if app credentials are missing.
-function resolvePageToken() {
-  if (FB_APP_ID && FB_APP_SECRET) {
-    console.log('🔑 Using App Access Token (never expires)');
-    return `${FB_APP_ID}|${FB_APP_SECRET}`;
+// ── Resolve token — exchange short-lived for permanent page token ─────────────
+// If app credentials are present, exchange user token → long-lived → page token.
+// Page tokens from /me/accounts with a long-lived user token never expire.
+async function resolvePageToken(token) {
+  if (!FB_APP_ID || !FB_APP_SECRET) return token;
+
+  // Step 1: exchange for 60-day long-lived user token
+  const ltRes = await fetch(
+    `https://graph.facebook.com/${GRAPH_VER}/oauth/access_token` +
+    `?grant_type=fb_exchange_token&client_id=${FB_APP_ID}` +
+    `&client_secret=${FB_APP_SECRET}&fb_exchange_token=${token}`
+  );
+  const ltData = await ltRes.json();
+  if (!ltData.access_token) return token;
+  const longToken = ltData.access_token;
+  console.log('🔄 Exchanged for long-lived user token');
+
+  // Step 2: get permanent page token via /me/accounts
+  const acctRes = await fetch(
+    `https://graph.facebook.com/${GRAPH_VER}/me/accounts?access_token=${longToken}`
+  );
+  const acctData = await acctRes.json();
+  if (!acctData.data) return longToken;
+
+  for (const page of acctData.data) {
+    if (/shekulli/i.test(page.name) || /shekulli/i.test(page.id)) {
+      console.log(`🔑 Got permanent page token for: ${page.name}`);
+      return page.access_token;
+    }
   }
-  return FB_TOKEN;
+  if (acctData.data.length > 0) {
+    console.log(`🔑 Got permanent page token for: ${acctData.data[0].name}`);
+    return acctData.data[0].access_token;
+  }
+  return longToken;
 }
 
 // ── Category detection ──────────────────────────────────────────────────────
@@ -161,13 +187,13 @@ async function scrape() {
   const ts = new Date().toLocaleTimeString();
   console.log(`\n[${ts}] 🚀 Graph API scrape starting…`);
 
-  if (!FB_TOKEN && !(FB_APP_ID && FB_APP_SECRET)) {
-    console.error(`[${ts}] ❌ No Facebook credentials. Set FB_APP_ID + FB_APP_SECRET (recommended) or FB_PAGE_TOKEN.`);
+  if (!FB_TOKEN) {
+    console.error(`[${ts}] ❌ FB_PAGE_TOKEN is not set. Get a permanent Page token from Graph Explorer.`);
     process.exit(1);
   }
 
   try {
-    const pageToken = resolvePageToken();
+    const pageToken = await resolvePageToken(FB_TOKEN);
     const fbPosts = await fetchGraphPosts(30, pageToken);
     console.log(`[${ts}] 📦 Fetched ${fbPosts.length} posts from Graph API`);
 

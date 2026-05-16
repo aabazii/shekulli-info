@@ -9,24 +9,26 @@ const ADMIN_PASS   = process.env.ADMIN_PASSWORD || 'shekulli2026';
 const VERCEL_URL   = process.env.VERCEL_URL || 'https://shekulli.vercel.app';
 
 // ── Token resolution — stores permanent page token in KV so it survives restarts
-async function resolveToken() {
+// headerToken: short-lived token passed via X-FB-Token header from GitHub Actions
+async function resolveToken(headerToken) {
   // 1. Check KV for a cached permanent token
   const cached = await kv.get('fb_permanent_token');
   if (cached) return cached;
 
-  // 2. Try to exchange FB_TOKEN for a permanent page token
-  if (!FB_TOKEN) return null;
-  if (!FB_APP_ID || !FB_APP_SECRET) return FB_TOKEN;
+  // 2. Use header token if provided, otherwise fall back to env var
+  const sourceToken = headerToken || FB_TOKEN;
+  if (!sourceToken) return null;
+  if (!FB_APP_ID || !FB_APP_SECRET) return sourceToken;
 
   try {
     // Exchange short-lived → long-lived user token
     const ltRes = await fetch(
       `https://graph.facebook.com/${GRAPH_VER}/oauth/access_token` +
       `?grant_type=fb_exchange_token&client_id=${FB_APP_ID}` +
-      `&client_secret=${FB_APP_SECRET}&fb_exchange_token=${FB_TOKEN}`
+      `&client_secret=${FB_APP_SECRET}&fb_exchange_token=${sourceToken}`
     );
     const ltData = await ltRes.json();
-    if (!ltData.access_token) return FB_TOKEN;
+    if (!ltData.access_token) return sourceToken;
 
     // Get permanent page token via /me/accounts
     const acctRes = await fetch(
@@ -43,8 +45,8 @@ async function resolveToken() {
     console.log(`🔑 Stored permanent page token for: ${page.name}`);
     return permanentToken;
   } catch (e) {
-    console.warn('Token exchange failed, using FB_TOKEN directly:', e.message);
-    return FB_TOKEN;
+    console.warn('Token exchange failed, using source token directly:', e.message);
+    return sourceToken;
   }
 }
 
@@ -128,7 +130,8 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    const token = await resolveToken();
+    const headerToken = req.headers['x-fb-token'] || null;
+    const token = await resolveToken(headerToken);
     if (!token) {
       return res.status(500).json({ ok: false, message: 'FB_PAGE_TOKEN not set' });
     }

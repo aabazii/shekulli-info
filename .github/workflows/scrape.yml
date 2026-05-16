@@ -13,7 +13,8 @@ jobs:
     steps:
       - name: Trigger Vercel scrape
         run: |
-          curl -sf -X POST \
+          curl -s -X POST \
             -H "Authorization: Bearer ${{ secrets.ADMIN_PASSWORD }}" \
+            -H "X-FB-Token: ${{ secrets.FB_PAGE_TOKEN }}" \
             https://shekulli.vercel.app/api/scrape \
             | cat

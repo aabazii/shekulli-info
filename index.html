@@ -62,8 +62,8 @@
       </aside>
 
       <section class="rail">
-        <h4 class="rail__head">Sport · Ndeshje</h4>
-        <div id="fixtures-list" style="display:flex;flex-direction:column;gap:0;">
+        <h4 class="rail__head" id="fixtures-head">Sport · Ndeshje</h4>
+        <div id="fixtures-list" style="position:relative;min-height:60px;">
           <div style="font-family:var(--font-sans);font-size:12px;color:var(--ink-3);padding:8px 0;">Duke ngarkuar…</div>
         </div>
       </section>
@@ -238,77 +238,108 @@
     /* Pull from backend API and re-render if newer data arrives */
     window.ShekullDB.refreshFromAPI(function () { location.reload(); });
 
-    /* ── Fixtures widget ──────────────────────────────────────────── */
+    /* ── Fixtures widget — rotating groups ───────────────────────── */
     (async function loadFixtures() {
-      const el = document.getElementById('fixtures-list');
+      const el   = document.getElementById('fixtures-list');
+      const head = document.getElementById('fixtures-head');
       if (!el) return;
 
-      try {
-        const res  = await fetch('/api/fixtures');
-        const data = await res.json();
-        const matches = data.matches || [];
+      const GROUPS = [
+        { label: 'Premier League · La Liga',    leagues: ['Premier League', 'La Liga'] },
+        { label: 'Serie A · Bundesliga',         leagues: ['Serie A', 'Bundesliga'] },
+      ];
+      const ROTATE_MS = 5000;
+      const tz = 'Europe/Tirane';
 
-        if (matches.length === 0) {
-          el.innerHTML = '<div style="font-family:var(--font-sans);font-size:12px;color:var(--ink-3);padding:8px 0;">Nuk ka ndeshje sot.</div>';
-          return;
+      function buildMatchRow(m, isLast) {
+        const isLive  = ['IN_PLAY','PAUSED','LIVE'].includes(m.status);
+        const isDone  = m.status === 'FINISHED';
+        const hasScore = m.homeScore !== null && m.awayScore !== null;
+        const d = new Date(m.utcDate);
+        const isToday = d.toDateString() === new Date().toDateString();
+        const dateStr = isToday
+          ? d.toLocaleTimeString('sq-AL', { hour: '2-digit', minute: '2-digit', timeZone: tz })
+          : d.toLocaleDateString('sq-AL', { day: 'numeric', month: 'short', timeZone: tz }) + ' ' +
+            d.toLocaleTimeString('sq-AL', { hour: '2-digit', minute: '2-digit', timeZone: tz });
+
+        let scoreHtml;
+        if (isLive) {
+          const minuteTag = m.status === 'PAUSED'
+            ? `<span style="margin-left:4px;font-size:9px;font-weight:700;color:#fff;background:var(--ink-3);border-radius:3px;padding:1px 4px;">HT</span>`
+            : m.minute != null
+              ? `<span style="margin-left:4px;font-size:9px;font-weight:700;color:#fff;background:var(--brand-red);border-radius:3px;padding:1px 4px;">${m.minute}'</span>`
+              : `<span style="margin-left:4px;width:6px;height:6px;border-radius:50%;background:var(--brand-red);display:inline-block;vertical-align:middle;animation:pulse 1s infinite;"></span>`;
+          scoreHtml = `<span style="color:var(--brand-red);font-weight:700;white-space:nowrap;">${m.homeScore}-${m.awayScore}${minuteTag}</span>`;
+        } else if (isDone && hasScore) {
+          scoreHtml = `<span style="color:var(--ink-2);font-weight:600;">${m.homeScore}-${m.awayScore}</span>`;
+        } else {
+          scoreHtml = `<span style="color:var(--ink-3);">${dateStr}</span>`;
         }
 
-        // Group by league
+        return `<div style="display:flex;justify-content:space-between;align-items:center;font-family:var(--font-sans);font-size:12px;padding:6px 0;${!isLast ? 'border-bottom:1px solid var(--rule);' : ''}">
+          <span style="${isLive ? 'font-weight:700;' : ''}">${m.home} v ${m.away}</span>
+          ${scoreHtml}
+        </div>`;
+      }
+
+      function buildGroupHtml(group, byLeague) {
+        let html = '';
+        group.leagues.forEach(league => {
+          const games = byLeague[league];
+          if (!games || games.length === 0) return;
+          html += `<div style="font-family:var(--font-sans);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-3);padding:10px 0 4px;">${league}</div>`;
+          games.forEach((m, i) => { html += buildMatchRow(m, i === games.length - 1); });
+        });
+        return html;
+      }
+
+      try {
+        const res     = await fetch('/api/fixtures');
+        const data    = await res.json();
+        const matches = data.matches || [];
+
         const byLeague = {};
         matches.forEach(m => {
           if (!byLeague[m.league]) byLeague[m.league] = [];
           byLeague[m.league].push(m);
         });
 
-        const leagueOrder = ['Premier League', 'La Liga', 'Bundesliga', 'Serie A'];
-        let html = '';
+        // Pre-build both group panels
+        const panels = GROUPS.map(g => buildGroupHtml(g, byLeague));
+        const hasContent = panels.some(p => p.length > 0);
 
-        leagueOrder.forEach(league => {
-          const games = byLeague[league];
-          if (!games || games.length === 0) return;
+        if (!hasContent) {
+          el.innerHTML = '<div style="font-family:var(--font-sans);font-size:12px;color:var(--ink-3);padding:8px 0;">Nuk ka ndeshje sot.</div>';
+          return;
+        }
 
-          html += `<div style="font-family:var(--font-sans);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-3);padding:10px 0 4px;">${league}</div>`;
+        // Inject fade style once
+        if (!document.getElementById('fix-fade-style')) {
+          const s = document.createElement('style');
+          s.id = 'fix-fade-style';
+          s.textContent = '#fixtures-list{transition:opacity .35s ease;}#fixtures-list.fading{opacity:0;}';
+          document.head.appendChild(s);
+        }
 
-          games.forEach((m, i) => {
-            const isLast  = i === games.length - 1;
-            const isLive  = ['IN_PLAY','PAUSED','LIVE'].includes(m.status);
-            const isDone  = m.status === 'FINISHED';
-            const hasScore = m.homeScore !== null && m.awayScore !== null;
+        let current = 0;
 
-            // Format date/time
-            const d = new Date(m.utcDate);
-            const today2 = new Date();
-            const isToday = d.toDateString() === today2.toDateString();
-            const tz = 'Europe/Belgrade'; // Kosovo timezone (UTC+1/+2)
-            const dateStr = isToday
-              ? d.toLocaleTimeString('sq-AL', { hour: '2-digit', minute: '2-digit', timeZone: tz })
-              : d.toLocaleDateString('sq-AL', { day: 'numeric', month: 'short', timeZone: tz }) + ' ' +
-                d.toLocaleTimeString('sq-AL', { hour: '2-digit', minute: '2-digit', timeZone: tz });
+        function showGroup(idx) {
+          const panel = panels[idx];
+          if (!panel) return;
+          el.classList.add('fading');
+          setTimeout(() => {
+            el.innerHTML = panel || '<div style="font-family:var(--font-sans);font-size:12px;color:var(--ink-3);padding:8px 0;">Nuk ka ndeshje.</div>';
+            if (head) head.textContent = GROUPS[idx].label;
+            el.classList.remove('fading');
+          }, 350);
+        }
 
-            let scoreHtml = '';
-            if (isLive) {
-              const isPaused = m.status === 'PAUSED';
-              const minuteTag = isPaused
-                ? `<span style="display:inline-block;margin-left:4px;font-size:9px;font-weight:700;color:#fff;background:var(--ink-3);border-radius:3px;padding:1px 4px;vertical-align:middle;">HT</span>`
-                : m.minute != null
-                  ? `<span style="display:inline-block;margin-left:4px;font-size:9px;font-weight:700;color:#fff;background:var(--brand-red);border-radius:3px;padding:1px 4px;vertical-align:middle;">${m.minute}'</span>`
-                  : `<span style="display:inline-block;margin-left:4px;width:6px;height:6px;border-radius:50%;background:var(--brand-red);vertical-align:middle;animation:pulse 1s infinite;"></span>`;
-              scoreHtml = `<span style="color:var(--brand-red);font-weight:700;white-space:nowrap;">${m.homeScore}-${m.awayScore}${minuteTag}</span>`;
-            } else if (isDone && hasScore) {
-              scoreHtml = `<span style="color:var(--ink-2);font-weight:600;">${m.homeScore}-${m.awayScore}</span>`;
-            } else {
-              scoreHtml = `<span style="color:var(--ink-3);">${dateStr}</span>`;
-            }
+        showGroup(0);
+        setInterval(() => {
+          current = (current + 1) % GROUPS.length;
+          showGroup(current);
+        }, ROTATE_MS);
 
-            html += `
-              <div style="display:flex;justify-content:space-between;align-items:center;font-family:var(--font-sans);font-size:12px;padding:6px 0;${!isLast ? 'border-bottom:1px solid var(--rule);' : ''}">
-                <span style="${isLive ? 'font-weight:700;' : ''}">${m.home} v ${m.away}</span>
-                ${scoreHtml}
-              </div>`;
-          });
-        });
-
-        el.innerHTML = html || '<div style="font-family:var(--font-sans);font-size:12px;color:var(--ink-3);padding:8px 0;">Nuk ka ndeshje sot.</div>';
       } catch (e) {
         el.innerHTML = '<div style="font-family:var(--font-sans);font-size:12px;color:var(--ink-3);padding:8px 0;">Ndeshjet nuk u ngarkuan.</div>';
       }

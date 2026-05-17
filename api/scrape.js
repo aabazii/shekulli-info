@@ -7,7 +7,7 @@ const FB_APP_ID    = process.env.FB_APP_ID;
 const FB_APP_SECRET = process.env.FB_APP_SECRET;
 const ADMIN_PASS   = process.env.ADMIN_PASSWORD || 'shekulli2026';
 // VERCEL_URL system var has no protocol — always use the canonical production URL
-const VERCEL_URL   = 'https://shekulli.vercel.app';
+const VERCEL_URL   = 'https://shekulli.info';
 
 // ── Token resolution — stores permanent page token in KV so it survives restarts
 // headerToken: short-lived token passed via X-FB-Token header from GitHub Actions

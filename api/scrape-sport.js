@@ -1,7 +1,7 @@
 const { kv } = require('@vercel/kv');
 
 const ADMIN_PASS = process.env.ADMIN_PASSWORD || 'shekulli2026';
-const VERCEL_URL = 'https://shekulli.vercel.app';
+const VERCEL_URL = 'https://shekulli.info';
 
 const RSS_FEED = 'https://www.gazetaexpress.com/category/sport/feed/';
 

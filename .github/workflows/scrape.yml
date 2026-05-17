@@ -1,24 +1,18 @@
 name: Scrape Facebook Posts
 
 on:
-  schedule:
-    - cron: '* * * * *'   # GitHub fires ~hourly; job loops internally every 60s
   workflow_dispatch:
 
 jobs:
   scrape:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 2
 
     steps:
-      - name: Scrape loop — every 60s for ~55 min
+      - name: Trigger Vercel scrape
         run: |
-          END=$((SECONDS + 3300))   # 55 minutes
-          while [ $SECONDS -lt $END ]; do
-            curl -s -X POST \
-              -H "Authorization: Bearer ${{ secrets.ADMIN_PASSWORD }}" \
-              -H "X-FB-Token: ${{ secrets.FB_PAGE_TOKEN }}" \
-              https://shekulli.vercel.app/api/scrape
-            echo ""
-            sleep 60
-          done
+          curl -s -X POST \
+            -H "Authorization: Bearer ${{ secrets.ADMIN_PASSWORD }}" \
+            -H "X-FB-Token: ${{ secrets.FB_PAGE_TOKEN }}" \
+            https://shekulli.vercel.app/api/scrape \
+            | cat

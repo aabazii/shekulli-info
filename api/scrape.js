@@ -12,36 +12,44 @@ const VERCEL_URL   = 'https://shekulli.vercel.app';
 // ── Token resolution — stores permanent page token in KV so it survives restarts
 // headerToken: short-lived token passed via X-FB-Token header from GitHub Actions
 async function resolveToken(headerToken) {
-  // 1. Check KV for a cached permanent token
+  // 1. Permanent page token in KV — never expires unless explicitly invalidated
   const cached = await kv.get('fb_permanent_token');
   if (cached) return cached;
 
-  // 2. Use header token if provided, otherwise fall back to env var
-  const sourceToken = headerToken || FB_TOKEN;
+  // 2. Try to get a new page token using the best available user token:
+  //    a) long-lived user token stored in KV (up to 60 days)
+  //    b) short-lived token from the request header
+  //    c) env var fallback
+  const kvLongLived = await kv.get('fb_longlived_token');
+  const sourceToken = kvLongLived || headerToken || FB_TOKEN;
   if (!sourceToken) return null;
   if (!FB_APP_ID || !FB_APP_SECRET) return sourceToken;
 
   try {
-    // Exchange short-lived → long-lived user token
+    // Exchange source → long-lived user token (no-op if already long-lived, FB handles it)
     const ltRes = await fetch(
       `https://graph.facebook.com/${GRAPH_VER}/oauth/access_token` +
       `?grant_type=fb_exchange_token&client_id=${FB_APP_ID}` +
       `&client_secret=${FB_APP_SECRET}&fb_exchange_token=${sourceToken}`
     );
     const ltData = await ltRes.json();
-    if (!ltData.access_token) return sourceToken;
+    const longLivedToken = ltData.access_token || sourceToken;
+
+    // Store the long-lived token as backup (refreshes its ~60-day window each time)
+    if (ltData.access_token) {
+      await kv.set('fb_longlived_token', longLivedToken);
+    }
 
     // Get permanent page token via /me/accounts
     const acctRes = await fetch(
-      `https://graph.facebook.com/${GRAPH_VER}/me/accounts?access_token=${ltData.access_token}`
+      `https://graph.facebook.com/${GRAPH_VER}/me/accounts?access_token=${longLivedToken}`
     );
     const acctData = await acctRes.json();
-    if (!acctData.data?.length) return ltData.access_token;
+    if (!acctData.data?.length) return longLivedToken;
 
     const page = acctData.data.find(p => /shekulli/i.test(p.name)) || acctData.data[0];
     const permanentToken = page.access_token;
 
-    // Store in KV permanently — never needs to be exchanged again
     await kv.set('fb_permanent_token', permanentToken);
     console.log(`🔑 Stored permanent page token for: ${page.name}`);
     return permanentToken;

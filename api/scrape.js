@@ -220,7 +220,8 @@ module.exports = async function handler(req, res) {
         const prevLen = (prev.body || '').length;
         const newLen  = (p.body || '').length;
         const hadSeeMore = /see\s*more|shiko\s*më\s*shumë/i.test(prev.title + ' ' + prev.standfirst + ' ' + prev.body);
-        if (newLen > prevLen + 20 || hadSeeMore) {
+        const photoNeedsMirror = prev.photo && prev.photo.includes('fbcdn.net') && p.photo && !p.photo.includes('fbcdn.net');
+        if (newLen > prevLen + 20 || hadSeeMore || photoNeedsMirror) {
           existingMap.set(p.id, { ...prev, ...p });
           updated++;
         }

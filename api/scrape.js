@@ -75,8 +75,9 @@ function guessCategory(text) {
   if (/\bfutboll|\bbasketboll|\bvolejboll|\btenis\b|\batletizëm|\bgol\b|\bpenalti\b|\bstadium\b|\blojtarë|\btrajner\b|\btransferim\b|\bskuadër\b|\bserie\s*a|\bpremier\s*league|\bchampions\b|\bnba\b|\bfifa\b|\buefa\b|\bkampionat\b/.test(t)) return 'Sport';
   if (/\bbotë\b|\bndërkombëtar|\beuropë\b|\bbashkim\s*europian|\bnato\b|\bonu\b|\bshba\b|\bukrainë|\brusi\b|\bizrael|\bpalestin|\bgaza\b|\btrump\b|\bputin\b|\bzelenski|\bmacron\b|\berdogan\b|\bkinë\b/.test(t)) return 'Botë';
   if (/\bekونomi|\bbiznes\b|\bbanka\b|\binflacion|\bturizëm|\beksport|\bimport\b|\binvestim|\bkompani\b|\btatim\b|\btregti\b|\bpunësim|\bpapunësi|\bpagë\b/.test(t)) return 'Ekonomi';
-  if (/\bkulturë\b|\bart\b|\bmuzikë\b|\bkëngë\b|\bfilm\b|\bteatër\b|\bekspozitë|\blibër\b|\bfestiv|\bkoncert\b|\balbum|\btrashëgimi/.test(t)) return 'Kulturë';
+  if (/\bkulturë\b|\bart\b|\bmuzikë\b|\bkëngë\b|\bkëngëtar|\bkëngëtare|\bfilm\b|\bteatër\b|\bekspozitë|\blibër\b|\bfestiv|\bkoncert\b|\balbum|\btrashëgimi|\binfluencer|\bcelebrit|\bviral\b|\bskenë\b|\bshow\b|\binterview|\bintervistë|\bintervistoi|\bbëhet viral|\bmodë\b|\bfashion/.test(t)) return 'Kulturë';
   if (/\bopinion\b|\bkoment\b|\beditorial|\banaliz|\bdebat\b/.test(t)) return 'Opinion';
+  if (/\bulqin|\bmali i zi|\bmontenegro|\btivari|\bpodgoricë|\bbeogradi|\bserbë|\bbosnjë|\bmaqedoni|\bgreqi\b|\bitali\b|\bgjermani\b|\bfranc\b|\bspanj\b|\bangli\b|\bbritani\b|\baustri\b|\bzvicër|\bbelgji|\bhollandë|\bpoloni\b/.test(t)) return 'Botë';
   return 'Lajme';
 }
 
@@ -152,8 +153,8 @@ module.exports = async function handler(req, res) {
       return res.json({ ok: true, message: 'No posts from API' });
     }
 
-    // Process posts
-    const posts = [];
+    // Process posts — build metadata first, then mirror images concurrently
+    const raw = [];
     for (const p of fbPosts) {
       const rawText = (p.message || '').trim();
       if (!rawText) continue;
@@ -172,11 +173,17 @@ module.exports = async function handler(req, res) {
         if (/video/i.test(att.type || '')) { hasVideo = true; break; }
       }
 
-      const published = new Date(p.created_time).getTime();
-      let photo = p.full_picture || '';
-      if (photo) photo = await mirrorImage(photo, published);
+      raw.push({ p, cat, title, body, standfirst, hasVideo,
+        published: new Date(p.created_time).getTime(),
+        photo: p.full_picture || '' });
+    }
 
-      posts.push({
+    // Mirror all images concurrently (much faster than sequential)
+    await Promise.all(raw.map(async item => {
+      if (item.photo) item.photo = await mirrorImage(item.photo, item.published);
+    }));
+
+    const posts = raw.map(({ p, cat, title, body, standfirst, hasVideo, published, photo }) => ({
         id:         `fb_${p.id}`,
         fb_post_id: p.id,
         category:   cat,
@@ -189,8 +196,7 @@ module.exports = async function handler(req, res) {
         postUrl:    p.permalink_url || '',
         author:     'Shekulli.info',
         published,
-      });
-    }
+      }));
 
     if (posts.length === 0) {
       return res.json({ ok: true, message: 'No processable posts found' });

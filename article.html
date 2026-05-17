@@ -11,13 +11,12 @@
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="colors_and_type.css">
   <link rel="stylesheet" href="styles.css">
-  <!-- Facebook SDK for video embeds -->
-  <div id="fb-root"></div>
-  <script async defer crossorigin="anonymous"
-    src="https://connect.facebook.net/sq_AL/sdk.js#xfbml=1&version=v19.0"></script>
 </head>
 
 <body>
+  <div id="fb-root"></div>
+  <script async defer crossorigin="anonymous"
+    src="https://connect.facebook.net/sq_AL/sdk.js#xfbml=1&version=v19.0&appId=&autoLogAppEvents=1"></script>
 
   <header class="masthead">
     <div class="masthead__top">
@@ -150,10 +149,10 @@
     <p class="standfirst">${article.standfirst}</p>
     <div class="meta" style="margin-bottom:20px;color:var(--ink-3);">${formatDate(article.published)} · ${timeAgo(article.published)}</div>
 
-    ${article.hasVideo && article.postUrl ? `
+    ${article.hasVideo ? `
     <div style="margin:24px 0;display:flex;justify-content:center;">
       <div class="fb-video"
-        data-href="${article.postUrl}"
+        data-href="${article.videoUrl || article.postUrl}"
         data-width="600"
         data-show-text="false"
         data-autoplay="false">
@@ -177,6 +176,12 @@
         Facebook
       </button>
     </div>`;
+
+        /* Tell FB SDK to parse the newly-injected fb-video element */
+        if (article.hasVideo) {
+          if (window.FB) FB.XFBML.parse(container);
+          else window.fbAsyncInit = (function(orig){ return function(){ if(orig) orig(); FB.XFBML.parse(container); }; })(window.fbAsyncInit);
+        }
 
         /* Related articles */
         const related = getArticles().filter(a => a.id !== article.id).slice(0, 2);

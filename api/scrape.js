@@ -170,11 +170,16 @@ module.exports = async function handler(req, res) {
       const standfirst = body.slice(0, 300);
 
       let hasVideo = false;
+      let videoUrl = '';
       for (const att of (p.attachments?.data || [])) {
-        if (/video/i.test(att.type || '')) { hasVideo = true; break; }
+        if (/video/i.test(att.type || '')) {
+          hasVideo = true;
+          videoUrl = att.url || '';
+          break;
+        }
       }
 
-      raw.push({ p, cat, title, body, standfirst, hasVideo,
+      raw.push({ p, cat, title, body, standfirst, hasVideo, videoUrl,
         published: new Date(p.created_time).getTime(),
         photo: p.full_picture || '' });
     }
@@ -184,7 +189,7 @@ module.exports = async function handler(req, res) {
       if (item.photo) item.photo = await mirrorImage(item.photo, item.published);
     }));
 
-    const posts = raw.map(({ p, cat, title, body, standfirst, hasVideo, published, photo }) => ({
+    const posts = raw.map(({ p, cat, title, body, standfirst, hasVideo, videoUrl, published, photo }) => ({
         id:         `fb_${p.id}`,
         fb_post_id: p.id,
         category:   cat,
@@ -194,6 +199,7 @@ module.exports = async function handler(req, res) {
         body,
         photo,
         hasVideo,
+        videoUrl:   videoUrl || '',
         postUrl:    p.permalink_url || '',
         author:     'Shekulli.info',
         published,

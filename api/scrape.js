@@ -232,7 +232,11 @@ module.exports = async function handler(req, res) {
         const prevLen = (prev.body || '').length;
         const newLen  = (p.body || '').length;
         const hadSeeMore = /see\s*more|shiko\s*më\s*shumë/i.test(prev.title + ' ' + prev.standfirst + ' ' + prev.body);
-        const photoNeedsMirror = prev.photo && prev.photo.includes('fbcdn.net');
+        const photoNeedsMirror = prev.photo && (
+          prev.photo.includes('fbcdn.net') ||
+          prev.photo.includes('vercel-storage.com') ||
+          prev.photo.includes('blob.vercel')
+        );
         if (newLen > prevLen + 20 || hadSeeMore || photoNeedsMirror) {
           existingMap.set(p.id, { ...prev, ...p });
           updated++;
@@ -240,7 +244,17 @@ module.exports = async function handler(req, res) {
       }
     }
 
-    // No image mirroring — FB CDN URLs last well beyond the 30-day post retention window
+    // Mirror images to R2 for new posts and posts needing updated photos
+    await Promise.all([
+      ...toAdd.map(async p => {
+        if (p.photo) p.photo = await mirrorImage(p.photo, p.published);
+      }),
+      ...Array.from(existingMap.values()).map(async p => {
+        if (p.photo && (p.photo.includes('fbcdn.net') || p.photo.includes('vercel-storage.com') || p.photo.includes('blob.vercel'))) {
+          p.photo = await mirrorImage(p.photo, p.published);
+        }
+      }),
+    ]);
 
     if (added === 0 && updated === 0) {
       return res.json({ ok: true, message: `No new posts (${posts.length} checked, all duplicates)` });

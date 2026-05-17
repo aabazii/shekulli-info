@@ -125,7 +125,10 @@ module.exports = async function handler(req, res) {
       return res.json({ ok: true, message: 'No processable items' });
     }
 
-    // Gazeta Express images are stable (no CDN expiry) — no mirroring needed
+    // Mirror images to R2
+    await Promise.all(raw.map(async item => {
+      if (item.photo) item.photo = await mirrorImage(item.photo, item.id);
+    }));
 
     const posts = raw.map(item => ({
       id:         item.id,
@@ -156,7 +159,7 @@ module.exports = async function handler(req, res) {
         toAdd.push(p);
         added++;
       } else {
-        const photoNeedsMirror = prev.photo && !prev.photo.includes(VERCEL_URL) && p.photo && p.photo.includes(VERCEL_URL);
+        const photoNeedsMirror = prev.photo && (prev.photo.includes('vercel-storage.com') || prev.photo.includes('blob.vercel'));
         const bodyGrew = (p.body || '').length > (prev.body || '').length + 20;
         if (bodyGrew || photoNeedsMirror) {
           existingMap.set(p.id, { ...prev, ...p });

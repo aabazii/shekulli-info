@@ -192,11 +192,8 @@ module.exports = async function handler(req, res) {
         photo: p.full_picture || '' });
     }
 
-    // Mirror all images concurrently (much faster than sequential)
-    await Promise.all(raw.map(async item => {
-      if (item.photo) item.photo = await mirrorImage(item.photo, item.published);
-    }));
-
+    // Build posts without mirroring yet — deduplicate first to avoid
+    // uploading images for posts already in KV (saves Blob operations)
     const posts = raw.map(({ p, cat, title, body, standfirst, hasVideo, videoUrl, published, photo }) => ({
         id:         `fb_${p.id}`,
         fb_post_id: p.id,
@@ -205,7 +202,7 @@ module.exports = async function handler(req, res) {
         title,
         standfirst,
         body,
-        photo,
+        photo,       // still fbcdn.net URL at this point
         hasVideo,
         videoUrl:   videoUrl || '',
         postUrl:    p.permalink_url || '',
@@ -235,13 +232,21 @@ module.exports = async function handler(req, res) {
         const prevLen = (prev.body || '').length;
         const newLen  = (p.body || '').length;
         const hadSeeMore = /see\s*more|shiko\s*më\s*shumë/i.test(prev.title + ' ' + prev.standfirst + ' ' + prev.body);
-        const photoNeedsMirror = prev.photo && prev.photo.includes('fbcdn.net') && p.photo && !p.photo.includes('fbcdn.net');
+        const photoNeedsMirror = prev.photo && prev.photo.includes('fbcdn.net');
         if (newLen > prevLen + 20 || hadSeeMore || photoNeedsMirror) {
           existingMap.set(p.id, { ...prev, ...p });
           updated++;
         }
       }
     }
+
+    // Only mirror images for new/updated posts — not all 30 every run
+    await Promise.all([
+      ...toAdd.map(async p => { if (p.photo) p.photo = await mirrorImage(p.photo, p.published); }),
+      ...Array.from(existingMap.values())
+        .filter(p => p.photo && p.photo.includes('fbcdn.net'))
+        .map(async p => { p.photo = await mirrorImage(p.photo, p.published); }),
+    ]);
 
     if (added === 0 && updated === 0) {
       return res.json({ ok: true, message: `No new posts (${posts.length} checked, all duplicates)` });

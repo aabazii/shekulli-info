@@ -125,10 +125,7 @@ module.exports = async function handler(req, res) {
       return res.json({ ok: true, message: 'No processable items' });
     }
 
-    // Mirror images concurrently
-    await Promise.all(raw.map(async item => {
-      if (item.photo) item.photo = await mirrorImage(item.photo, item.id);
-    }));
+    // Gazeta Express images are stable (no CDN expiry) — no mirroring needed
 
     const posts = raw.map(item => ({
       id:         item.id,

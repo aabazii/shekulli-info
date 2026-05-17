@@ -6,9 +6,11 @@
   "functions": {
     "api/admin/upload.js": { "maxDuration": 60 },
     "api/admin/import.js": { "maxDuration": 60 },
-    "api/scrape.js":       { "maxDuration": 60 }
+    "api/scrape.js":       { "maxDuration": 60 },
+    "api/scrape-sport.js": { "maxDuration": 60 }
   },
   "crons": [
-    { "path": "/api/scrape", "schedule": "0 0 * * *" }
+    { "path": "/api/scrape",       "schedule": "0 0 * * *" },
+    { "path": "/api/scrape-sport", "schedule": "0 1 * * *" }
   ]
 }

@@ -18,3 +18,10 @@ jobs:
             -H "X-FB-Token: ${{ secrets.FB_PAGE_TOKEN }}" \
             https://shekulli.vercel.app/api/scrape \
             | cat
+
+      - name: Trigger sport RSS scrape
+        run: |
+          curl -s -X POST \
+            -H "Authorization: Bearer ${{ secrets.ADMIN_PASSWORD }}" \
+            https://shekulli.vercel.app/api/scrape-sport \
+            | cat

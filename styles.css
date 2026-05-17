@@ -577,6 +577,39 @@ ol {
   margin-top: 8px;
 }
 
+.tweet-embed {
+  margin: 20px 0;
+  padding: 16px;
+  background: var(--paper-2, #f5f6f8);
+  border-left: 3px solid #000;
+  border-radius: 0 8px 8px 0;
+}
+
+.tweet-embed__caption {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  color: var(--ink-2);
+  margin: 0 0 12px;
+}
+
+.tweet-embed__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: #000;
+  color: #fff;
+  border-radius: 20px;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.tweet-embed__btn:hover {
+  background: #222;
+}
+
 /* ============================================================
    Footer
    ============================================================ */

@@ -127,6 +127,19 @@
             if (p.startsWith('"') && p.endsWith('"') && p.length < 300) {
               return `<blockquote class="pullquote">${p}</blockquote>`;
             }
+            // Twitter/X media embed — render a watch button
+            const twMatch = p.match(/pic\.twitter\.com\/(\w+)/);
+            if (twMatch) {
+              const tweetUrl = `https://pic.twitter.com/${twMatch[1]}`;
+              const caption = p.replace(/pic\.twitter\.com\/\w+/g, '').replace(/^[🏆🎥📹\s🔴]+/, '').trim();
+              return `<div class="tweet-embed">
+                ${caption ? `<p class="tweet-embed__caption">${caption}</p>` : ''}
+                <a class="tweet-embed__btn" href="${tweetUrl}" target="_blank" rel="noopener">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.253 5.622 5.91-5.622Zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                  Shiko videon
+                </a>
+              </div>`;
+            }
             return `<p>${p}</p>`;
           })
           .join('\n');

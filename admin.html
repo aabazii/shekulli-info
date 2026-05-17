@@ -326,6 +326,8 @@
     </a>
     <div class="admin-bar__actions">
       <a href="/" class="btn btn--ghost btn--sm" style="color:#cfd5e2;border-color:#1F3260;">← Kthehu te faqja</a>
+      <button onclick="fixImages()" class="btn btn--ghost btn--sm"
+        style="color:#f0a500;border-color:#1F3260;">🖼 Rregullo fotot</button>
       <button onclick="logout()" class="btn btn--ghost btn--sm"
         style="color:#8089A0;border-color:#1F3260;">Dilni</button>
     </div>
@@ -501,6 +503,27 @@
       } else {
         p.style.backgroundImage = '';
         txt.style.display = '';
+      }
+    }
+
+    async function fixImages() {
+      if (!confirm('Do you want to fix all broken images? This may take up to 30 seconds.')) return;
+      const btn = event.target;
+      btn.disabled = true;
+      btn.textContent = '⏳ Duke rregulluar...';
+      try {
+        const r = await fetch('/api/admin/utils?action=fix-images', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${pass}` },
+        });
+        const d = await r.json();
+        alert(d.message || 'Done');
+        loadArticles();
+      } catch (e) {
+        alert('Error: ' + e.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '🖼 Rregullo fotot';
       }
     }
 

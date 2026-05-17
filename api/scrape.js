@@ -240,13 +240,7 @@ module.exports = async function handler(req, res) {
       }
     }
 
-    // Only mirror images for new/updated posts — not all 30 every run
-    await Promise.all([
-      ...toAdd.map(async p => { if (p.photo) p.photo = await mirrorImage(p.photo, p.published); }),
-      ...Array.from(existingMap.values())
-        .filter(p => p.photo && p.photo.includes('fbcdn.net'))
-        .map(async p => { p.photo = await mirrorImage(p.photo, p.published); }),
-    ]);
+    // No image mirroring — FB CDN URLs last well beyond the 30-day post retention window
 
     if (added === 0 && updated === 0) {
       return res.json({ ok: true, message: `No new posts (${posts.length} checked, all duplicates)` });

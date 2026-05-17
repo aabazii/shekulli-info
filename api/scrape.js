@@ -239,7 +239,10 @@ module.exports = async function handler(req, res) {
       return res.json({ ok: true, message: `No new posts (${posts.length} checked, all duplicates)` });
     }
 
+    const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000; // 30 days ago
+
     const merged = [...toAdd, ...Array.from(existingMap.values())]
+      .filter(p => (p.published || 0) >= cutoff)
       .sort((a, b) => b.published - a.published)
       .slice(0, 500);
 

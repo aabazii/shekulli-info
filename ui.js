@@ -127,32 +127,48 @@
       .map((x) => x.a);
   }
 
+  const CATEGORIES = ['Politikë','Kosovë','Botë','Ekonomi','Sport','Kulturë','Opinion'];
+
   function renderSearchResults(results, q) {
     const shell = qs('#ui-shell');
     const resultsEl = qs('#ui-search-results', shell);
     if (!resultsEl) return;
 
     if (!q.trim()) {
-      resultsEl.innerHTML = `<p class="meta" style="color:var(--ink-3);padding:8px 0;">Shkruaj për të kërkuar.</p>`;
+      // Recommendations: category chips + 4 recent articles
+      const api = window.ShekullDB;
+      const recent = (api && typeof api.getArticles === 'function') ? api.getArticles().slice(0, 4) : [];
+
+      const chips = CATEGORIES.map(cat =>
+        `<a class="ui-search__chip" href="category?cat=${encodeURIComponent(cat)}">${cat}</a>`
+      ).join('');
+
+      const recentHtml = recent.map(a =>
+        `<a class="ui-result" href="article?id=${encodeURIComponent(a.id)}">
+          <span style="font-family:var(--font-sans);font-size:10px;font-weight:700;color:var(--brand-red);text-transform:uppercase;letter-spacing:.06em;">${a.category}</span>
+          <div class="ui-result__title">${a.title}</div>
+        </a>`
+      ).join('');
+
+      resultsEl.innerHTML = `
+        <div class="ui-search__section-label">Rubrikat</div>
+        <div class="ui-search__chips">${chips}</div>
+        ${recent.length ? `<div class="ui-search__section-label" style="border-top:1px solid var(--rule);padding-top:12px;">Të fundit</div>${recentHtml}` : ''}
+      `;
       return;
     }
 
     if (results.length === 0) {
-      resultsEl.innerHTML = `<p class="meta" style="color:var(--ink-3);padding:8px 0;">Nuk u gjet asgjë.</p>`;
+      resultsEl.innerHTML = `<p style="font-family:var(--font-sans);font-size:13px;color:var(--ink-3);padding:16px;">Nuk u gjet asgjë për "<strong>${q}</strong>".</p>`;
       return;
     }
 
     resultsEl.innerHTML = results
-      .map((a) => {
-        const href = `article?id=${encodeURIComponent(a.id)}`;
-        return `
-          <a class="ui-result" href="${href}">
-            <span class="kicker" style="color:var(--brand-red)">${(a.category || '').toUpperCase()}</span>
-            <div class="ui-result__title">${a.title || ''}</div>
-            <div class="meta" style="color:var(--ink-3)">${a.standfirst || ''}</div>
-          </a>
-        `;
-      })
+      .map((a) => `
+        <a class="ui-result" href="article?id=${encodeURIComponent(a.id)}">
+          <span style="font-family:var(--font-sans);font-size:10px;font-weight:700;color:var(--brand-red);text-transform:uppercase;letter-spacing:.06em;">${a.category}</span>
+          <div class="ui-result__title">${a.title}</div>
+        </a>`)
       .join('');
   }
 
@@ -171,7 +187,6 @@
     search.hidden = false;
     search.setAttribute('aria-hidden', 'false');
     backdrop.hidden = false;
-    setScrollLock(true);
 
     const input = qs('.ui-search__input', shell);
     if (input) {

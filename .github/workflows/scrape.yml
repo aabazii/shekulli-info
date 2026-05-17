@@ -2,7 +2,7 @@ name: Scrape Facebook Posts
 
 on:
   schedule:
-    - cron: '*/10 * * * *'   # every 10 min (backup to Vercel cron)
+    - cron: '* * * * *'   # every 1 min
   workflow_dispatch:
 
 jobs:

@@ -490,29 +490,54 @@
       document.getElementById('editor-mode-label').textContent = 'Artikull i ri';
     }
 
-    function publish() {
+    async function publish() {
       const title = document.getElementById('f-title').value.trim();
       const body = document.getElementById('f-body').value.trim();
       if (!title) { toast('⚠ Titulli është i detyrueshëm.'); return; }
       if (!body) { toast('⚠ Teksti nuk mund të jetë bosh.'); return; }
 
-      const id = document.getElementById('edit-id').value || Date.now();
+      const rawId = document.getElementById('edit-id').value;
+      // Preserve string IDs (e.g. fb_12345, rss_sport_...) — only coerce to number for new articles
+      const id = rawId || Date.now();
+      const cat = document.getElementById('f-category').value;
       const article = {
-        id: Number(id),
+        id: rawId ? (isNaN(rawId) ? rawId : Number(rawId)) : Number(id),
         title,
-        category: document.getElementById('f-category').value,
-        kicker: document.getElementById('f-kicker').value.trim() || document.getElementById('f-category').value.toUpperCase(),
+        category: cat,
+        kicker: document.getElementById('f-kicker').value.trim() || cat.toUpperCase(),
         standfirst: document.getElementById('f-standfirst').value.trim(),
         body,
         author: document.getElementById('f-author').value.trim() || 'Redaksia',
         photo: document.getElementById('f-photo').value.trim(),
-        published: Number(id) || Date.now()
+        published: rawId ? (db().getArticles().find(a => String(a.id) === String(rawId))?.published || Date.now()) : Number(id),
       };
 
-      db().saveArticle(article);
-      toast('✓ Artikulli u publikua!');
-      clearForm();
-      renderList();
+      const btn = document.querySelector('.btn--primary');
+      btn.disabled = true;
+      btn.textContent = '⏳ Duke ruajtur…';
+
+      try {
+        const res = await fetch('/api/admin/edit', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer shekulli2026',
+          },
+          body: JSON.stringify({ article }),
+        });
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.message);
+
+        db().saveArticle(article); // update local cache too
+        toast('✓ Artikulli u ruajt!');
+        clearForm();
+        renderList();
+      } catch (err) {
+        toast('❌ Gabim: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg> Publiko';
+      }
     }
 
     function editArticle(id) {

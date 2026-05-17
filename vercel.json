@@ -6,6 +6,7 @@
   "functions": {
     "api/admin/upload.js": { "maxDuration": 60 },
     "api/admin/import.js": { "maxDuration": 60 },
+    "api/admin/edit.js":   { "maxDuration": 30 },
     "api/scrape.js":       { "maxDuration": 60 },
     "api/scrape-sport.js": { "maxDuration": 60 }
   },

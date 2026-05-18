@@ -1,0 +1,16 @@
+name = "shekulli-info"
+main = "src/worker.js"
+compatibility_date = "2026-05-18"
+compatibility_flags = ["nodejs_compat"]
+
+[assets]
+directory = "."
+binding = "ASSETS"
+
+[[kv_namespaces]]
+binding = "KV"
+id = "c214c0482e8043a091f472b1477598a5"
+
+[[r2_buckets]]
+binding = "R2"
+bucket_name = "shekulli"

@@ -13,7 +13,7 @@ export async function handleUpload(request, env) {
 
   try {
     const buf = await request.arrayBuffer();
-    await env.R2.put(key, buf, { httpMetadata: { contentType } });
+    await env.BUCKET.put(key, buf, { httpMetadata: { contentType } });
     return json({ ok: true, url: `${PUBLIC_R2_URL}/${key}` });
   } catch (e) {
     return json({ ok: false, message: e.message }, 500);

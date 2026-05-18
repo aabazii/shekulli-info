@@ -12,7 +12,7 @@ export async function mirrorImage(srcUrl, key, env) {
     if (buf.byteLength < 500) return srcUrl;
     const ext = srcUrl.includes('.png') ? 'png' : 'jpg';
     const r2Key = `${key}.${ext}`;
-    await env.R2.put(r2Key, buf, { httpMetadata: { contentType: `image/${ext}` } });
+    await env.BUCKET.put(r2Key, buf, { httpMetadata: { contentType: `image/${ext}` } });
     return `${PUBLIC_R2_URL}/${r2Key}`;
   } catch {
     return srcUrl;

@@ -1,5 +1,8 @@
 node_modules/
+.wrangler/
 server/
+tests/
+vitest.config.mjs
 .git/
 .github/
 .vercel/

@@ -2,6 +2,7 @@ import { kvGet, kvSet } from '../lib/kv.js';
 import { json, cors } from '../lib/response.js';
 import { mirrorImage } from '../lib/r2.js';
 import { guessCategory } from '../lib/category.js';
+import { checkRateLimit } from '../lib/rateLimit.js';
 
 const GRAPH_VER = 'v21.0';
 const FB_PAGE_ID = 'shekulliinfo';
@@ -64,6 +65,11 @@ export async function handleScrape(request, env) {
   const authHeader = (request.headers.get('Authorization') || '').replace('Bearer ', '');
   if (!env.ADMIN_PASSWORD || authHeader !== env.ADMIN_PASSWORD) {
     return json({ ok: false, message: 'Unauthorized' }, 401);
+  }
+
+  const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+  if (!await checkRateLimit(env, `scrape:${ip}`, 5, 60)) {
+    return json({ ok: false, message: 'Rate limit exceeded — wait a minute' }, 429);
   }
 
   const url = new URL(request.url);

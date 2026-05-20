@@ -1,6 +1,7 @@
 import { kvGet, kvSet } from '../lib/kv.js';
 import { json, cors } from '../lib/response.js';
 import { mirrorImage } from '../lib/r2.js';
+import { checkRateLimit } from '../lib/rateLimit.js';
 
 const RSS_FEED = 'https://www.gazetaexpress.com/category/sport/feed/';
 
@@ -40,6 +41,11 @@ export async function handleScrapeSport(request, env) {
   const authHeader = (request.headers.get('Authorization') || '').replace('Bearer ', '');
   if (!env.ADMIN_PASSWORD || authHeader !== env.ADMIN_PASSWORD) {
     return json({ ok: false, message: 'Unauthorized' }, 401);
+  }
+
+  const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+  if (!await checkRateLimit(env, `scrape-sport:${ip}`, 5, 60)) {
+    return json({ ok: false, message: 'Rate limit exceeded — wait a minute' }, 429);
   }
 
   try {

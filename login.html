@@ -109,8 +109,6 @@
 </div>
 
 <script>
-/* Change this to your own password */
-const ADMIN_PASSWORD = 'Shekulli2026';
 const SESSION_KEY = 'shekulli_admin_session';
 
 /* Redirect to admin if already logged in */
@@ -119,28 +117,52 @@ if (sessionStorage.getItem(SESSION_KEY) === '1') {
   location.replace(next);
 }
 
-function doLogin(e) {
+function shakeBox() {
+  const box = document.querySelector('.login-box');
+  box.style.transition = 'transform 0.06s';
+  let i = 0;
+  const dirs = [-6,6,-4,4,-2,2,0];
+  const shake = setInterval(() => {
+    box.style.transform = 'translateX(' + (dirs[i] || 0) + 'px)';
+    if (++i >= dirs.length) { clearInterval(shake); box.style.transform = ''; }
+  }, 60);
+}
+
+async function doLogin(e) {
   e.preventDefault();
   const input = document.getElementById('password').value;
-  if (input === ADMIN_PASSWORD) {
-    sessionStorage.setItem(SESSION_KEY, '1');
-    const next = new URLSearchParams(location.search).get('next') || 'admin';
-    location.replace(next);
-  } else {
+  const btn = document.querySelector('.btn-login');
+
+  btn.textContent = 'Duke kontrolluar…';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch('/api/admin/verify', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + input },
+    });
+
+    if (res.ok) {
+      sessionStorage.setItem(SESSION_KEY, '1');
+      sessionStorage.setItem('shekulli_admin_token', input);
+      const next = new URLSearchParams(location.search).get('next') || 'admin';
+      location.replace(next);
+    } else {
+      const err = document.getElementById('error');
+      err.classList.add('show');
+      document.getElementById('password').value = '';
+      document.getElementById('password').focus();
+      shakeBox();
+    }
+  } catch (networkErr) {
     const err = document.getElementById('error');
+    err.textContent = 'Gabim rrjeti. Kontrolloni lidhjen dhe provoni sërish.';
     err.classList.add('show');
-    document.getElementById('password').value = '';
-    document.getElementById('password').focus();
-    /* Shake the box */
-    const box = document.querySelector('.login-box');
-    box.style.transition = 'transform 0.06s';
-    let i = 0;
-    const dirs = [-6,6,-4,4,-2,2,0];
-    const shake = setInterval(() => {
-      box.style.transform = 'translateX(' + (dirs[i] || 0) + 'px)';
-      if (++i >= dirs.length) { clearInterval(shake); box.style.transform = ''; }
-    }, 60);
+  } finally {
+    btn.textContent = 'Hyni →';
+    btn.disabled = false;
   }
+
   return false;
 }
 </script>

@@ -264,11 +264,10 @@
 
         let scoreHtml;
         if (isLive) {
+          const elapsed = m.minute != null ? m.minute : Math.min(90, Math.max(1, Math.floor((Date.now() - new Date(m.utcDate).getTime()) / 60000)));
           const minuteTag = m.status === 'PAUSED'
             ? `<span style="margin-left:4px;font-size:9px;font-weight:700;color:#fff;background:var(--ink-3);border-radius:3px;padding:1px 4px;">HT</span>`
-            : m.minute != null
-              ? `<span style="margin-left:4px;font-size:9px;font-weight:700;color:#fff;background:var(--brand-red);border-radius:3px;padding:1px 4px;">${m.minute}'</span>`
-              : `<span style="margin-left:4px;width:6px;height:6px;border-radius:50%;background:var(--brand-red);display:inline-block;vertical-align:middle;animation:pulse 1s infinite;"></span>`;
+            : `<span style="margin-left:4px;font-size:9px;font-weight:700;color:#fff;background:var(--brand-red);border-radius:3px;padding:1px 4px;">${elapsed}'</span>`;
           scoreHtml = `<span style="color:var(--brand-red);font-weight:700;white-space:nowrap;">${m.homeScore}-${m.awayScore}${minuteTag}</span>`;
         } else if (isDone && hasScore) {
           scoreHtml = `<span style="color:var(--ink-2);font-weight:600;">${m.homeScore}-${m.awayScore}</span>`;

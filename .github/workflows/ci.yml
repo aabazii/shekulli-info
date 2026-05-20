@@ -38,6 +38,14 @@ jobs:
           fi
           echo "✓ No hardcoded passwords found"
 
+      - name: Check for hardcoded tokens in HTML
+        run: |
+          if grep -rn "shekulli2026\|Shekulli2026" *.html 2>/dev/null; then
+            echo "ERROR: Hardcoded password found in HTML file"
+            exit 1
+          fi
+          echo "✓ No hardcoded passwords in HTML"
+
   # ── Deploy CF Worker to production — only on push to main ────────────────────
   deploy-worker:
     name: Deploy Cloudflare Worker
@@ -64,3 +72,35 @@ jobs:
         run: npm run test:smoke
         env:
           SITE_URL: https://shekulli.info
+
+  e2e:
+    name: E2E Browser Tests
+    needs: deploy-worker
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install chromium --with-deps
+
+      - name: Run E2E tests
+        run: npm run test:e2e
+        env:
+          SITE_URL: https://shekulli.info
+
+      - name: Upload test report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7

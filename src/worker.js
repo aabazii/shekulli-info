@@ -8,11 +8,12 @@ import { handleEdit }       from './handlers/admin/edit.js';
 import { handleUpload }     from './handlers/admin/upload.js';
 import { handleUtils }      from './handlers/admin/utils.js';
 import { handleImport }     from './handlers/admin/import.js';
+import { handleVerify }     from './handlers/admin/verify.js';
 import { handleFixtures }   from './handlers/fixtures.js';
 
 const ADMIN_ROUTES = new Set([
   '/api/admin/delete', '/api/admin/edit', '/api/admin/upload',
-  '/api/admin/utils',  '/api/admin/import',
+  '/api/admin/utils',  '/api/admin/import', '/api/admin/verify',
   '/api/scrape',       '/api/scrape-sport',
 ]);
 
@@ -39,6 +40,7 @@ const ROUTES = {
   '/api/admin/upload':   handleUpload,
   '/api/admin/utils':    handleUtils,
   '/api/admin/import':   handleImport,
+  '/api/admin/verify':   handleVerify,
   '/api/fixtures':       handleFixtures,
 };
 

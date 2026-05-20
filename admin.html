@@ -447,6 +447,9 @@
       location.replace('login?next=admin');
     }
 
+    const ADMIN_TOKEN = sessionStorage.getItem('shekulli_admin_token') || '';
+    if (!ADMIN_TOKEN) { sessionStorage.removeItem(SESSION_KEY); location.replace('login?next=admin'); }
+
     function logout() {
       sessionStorage.removeItem(SESSION_KEY);
       location.replace('login');
@@ -474,7 +477,7 @@
         const res = await fetch('/api/admin/upload?filename=' + encodeURIComponent(file.name), {
           method: 'POST',
           headers: {
-            'Authorization': 'Bearer shekulli2026',
+            'Authorization': `Bearer ${ADMIN_TOKEN}`,
             'Content-Type': file.type,
           },
           body: file,
@@ -514,7 +517,7 @@
       try {
         const r = await fetch('/api/admin/utils?action=fix-images', {
           method: 'POST',
-          headers: { Authorization: `Bearer ${pass}` },
+          headers: { Authorization: `Bearer ${ADMIN_TOKEN}` },
         });
         const d = await r.json();
         alert(d.message || 'Done');
@@ -571,7 +574,7 @@
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': 'Bearer shekulli2026',
+            'Authorization': `Bearer ${ADMIN_TOKEN}`,
           },
           body: JSON.stringify({ article }),
         });
@@ -611,7 +614,7 @@
       try {
         const res = await fetch('/api/admin/delete?id=' + encodeURIComponent(id), {
           method: 'DELETE',
-          headers: { 'Authorization': 'Bearer shekulli2026' }
+          headers: { 'Authorization': `Bearer ${ADMIN_TOKEN}` }
         });
         const data = await res.json();
         if (!data.ok) throw new Error(data.message);

@@ -7,10 +7,12 @@
     "dev": "wrangler dev",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:smoke": "vitest run tests/smoke.test.mjs"
+    "test:smoke": "vitest run tests/smoke.test.mjs",
+    "test:e2e": "playwright test"
   },
   "dependencies": {},
   "devDependencies": {
+    "@playwright/test": "^1.52.0",
     "vitest": "^3.0.0",
     "wrangler": "^4.0.0"
   }

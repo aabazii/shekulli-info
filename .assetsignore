@@ -31,3 +31,6 @@ ADMIN_GUIDE.md
 HOW_IT_WORKS.md
 QUICK_START.md
 SCRAPER_SETUP.md
+playwright-report/
+test-results/
+playwright.config.mjs

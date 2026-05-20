@@ -1,6 +1,6 @@
 /* Shekulli.info — Shared data layer (localStorage) */
 
-const STORAGE_KEY = 'shekulli_v2'; // v2 = real FB articles only, no seed data
+const STORAGE_KEY = 'shekulli_v3';
 
 /* All real content comes live from the Facebook scraper via the API.
    No placeholder/seed articles. */
@@ -55,9 +55,11 @@ function refreshFromAPI(onDone) {
       const existing = _load() || [];
       const existingIds = new Set(existing.map(a => String(a.id)));
       const serverIds  = new Set(normalised.map(a => String(a.id)));
+      const existingPhotoMap = new Map(existing.map(a => [String(a.id), a.photo || '']));
       const changed = normalised.length !== existing.length ||
                       normalised.some(a => !existingIds.has(String(a.id))) ||
-                      existing.some(a => !serverIds.has(String(a.id)));
+                      existing.some(a => !serverIds.has(String(a.id))) ||
+                      normalised.some(a => (a.photo || '') !== (existingPhotoMap.get(String(a.id)) || ''));
       _save(normalised);
       if (changed && typeof onDone === 'function') onDone(normalised);
     })

@@ -205,12 +205,25 @@
     }
   }
 
+  function toggleTheme() {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    if (isDark) {
+      document.documentElement.removeAttribute('data-theme');
+      try { localStorage.removeItem('theme'); } catch (e) {}
+    } else {
+      document.documentElement.setAttribute('data-theme', 'dark');
+      try { localStorage.setItem('theme', 'dark'); } catch (e) {}
+    }
+  }
+
   function wireButtons() {
     const menuBtn = qs('[data-action="menu"]');
     const searchBtn = qs('[data-action="search"]');
+    const themeBtn = qs('[data-action="theme"]');
 
     if (menuBtn) menuBtn.addEventListener('click', openDrawer);
     if (searchBtn) searchBtn.addEventListener('click', openSearch);
+    if (themeBtn) themeBtn.addEventListener('click', toggleTheme);
   }
 
   if (document.readyState === 'loading') {

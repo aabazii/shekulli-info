@@ -93,6 +93,24 @@ ol {
   color: #fff;
 }
 
+[data-theme="dark"] .masthead__tagline {
+  color: #fff;
+}
+
+[data-theme="dark"] .masthead__nav-item {
+  color: #fff;
+}
+
+[data-theme="dark"] .masthead__nav-item:hover,
+[data-theme="dark"] .masthead__nav-item.is-active {
+  color: #fff;
+  border-bottom-color: #fff;
+}
+
+[data-theme="dark"] .masthead__nav-search {
+  color: #fff;
+}
+
 .masthead__nav-search {
   color: #7ab3e8;
   margin-right: 22px;

@@ -51,6 +51,44 @@ ol {
 [data-theme="dark"] .theme-toggle__moon { display: none; }
 [data-theme="dark"] .theme-toggle__sun { display: block; }
 
+#read-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 3px;
+  width: 0;
+  background: var(--brand-red);
+  z-index: 100;
+  pointer-events: none;
+  transition: width 80ms linear;
+}
+
+#back-to-top {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--brand-red);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 90;
+  box-shadow: 0 2px 12px rgba(0,0,0,.25);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity var(--dur-base) var(--ease-out), visibility var(--dur-base) var(--ease-out);
+}
+
+#back-to-top.is-visible {
+  opacity: 1;
+  visibility: visible;
+}
+
 .masthead__nav-search {
   color: #7ab3e8;
   margin-right: 22px;

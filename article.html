@@ -191,16 +191,20 @@
 
     <div class="body article__body">${bodyHtml}</div>
 
-    <div style="margin-top:32px;padding-top:24px;border-top:1px solid var(--rule);display:flex;align-items:center;gap:12px;font-family:var(--font-sans);font-size:13px;color:var(--ink-3);">
+    <div style="margin-top:32px;padding-top:24px;border-top:1px solid var(--rule);display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-family:var(--font-sans);font-size:13px;color:var(--ink-3);">
       <span>Shpërndaje:</span>
       <button onclick="navigator.share ? navigator.share({title:document.title,url:location.href}) : navigator.clipboard.writeText(location.href).then(()=>alert('Lidhja u kopjua!'))" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:#1456C7;color:#fff;border:none;border-radius:6px;font-family:var(--font-sans);font-size:13px;font-weight:600;cursor:pointer;">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></svg>
-        Shpërndaje
+        Kopjo lidhjen
       </button>
       <a href="https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(location.href)}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:#1877F2;color:#fff;border-radius:6px;font-family:var(--font-sans);font-size:13px;font-weight:600;text-decoration:none;">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
         Facebook
-      </button>
+      </a>
+      <a href="https://wa.me/?text=${encodeURIComponent(article.title + ' — ' + location.href)}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:#25D366;color:#fff;border-radius:6px;font-family:var(--font-sans);font-size:13px;font-weight:600;text-decoration:none;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.123.554 4.11 1.523 5.84L.057 23.862a.5.5 0 0 0 .614.614l6.022-1.466A11.955 11.955 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.882a9.876 9.876 0 0 1-5.032-1.368l-.361-.214-3.733.978.978-3.734-.229-.374A9.887 9.887 0 0 1 2.118 12c0-5.44 4.442-9.882 9.882-9.882S21.882 6.56 21.882 12 17.44 21.882 12 21.882z"/></svg>
+        WhatsApp
+      </a>
     </div>`;
 
         /* Tell FB SDK to parse the newly-injected fb-video element */

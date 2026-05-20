@@ -216,6 +216,30 @@
     }
   }
 
+  function initProgressBar() {
+    const bar = document.createElement('div');
+    bar.id = 'read-progress';
+    document.body.appendChild(bar);
+    window.addEventListener('scroll', function () {
+      const total = document.documentElement.scrollHeight - window.innerHeight;
+      bar.style.width = total > 0 ? (window.scrollY / total * 100) + '%' : '0';
+    }, { passive: true });
+  }
+
+  function initBackToTop() {
+    const btn = document.createElement('button');
+    btn.id = 'back-to-top';
+    btn.setAttribute('aria-label', 'Kthehu lart');
+    btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 15l-6-6-6 6"/></svg>';
+    document.body.appendChild(btn);
+    btn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+    window.addEventListener('scroll', function () {
+      btn.classList.toggle('is-visible', window.scrollY > 400);
+    }, { passive: true });
+  }
+
   function wireButtons() {
     const menuBtn = qs('[data-action="menu"]');
     const searchBtn = qs('[data-action="search"]');
@@ -224,6 +248,9 @@
     if (menuBtn) menuBtn.addEventListener('click', openDrawer);
     if (searchBtn) searchBtn.addEventListener('click', openSearch);
     if (themeBtn) themeBtn.addEventListener('click', toggleTheme);
+
+    initProgressBar();
+    initBackToTop();
   }
 
   if (document.readyState === 'loading') {

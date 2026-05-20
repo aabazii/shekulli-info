@@ -45,6 +45,14 @@ const ROUTES = {
 };
 
 export default {
+  async scheduled(controller, env, ctx) {
+    const req = new Request('https://shekulli.info/api/scrape', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${env.ADMIN_PASSWORD}` },
+    });
+    await handleScrape(req, env);
+  },
+
   async fetch(request, env, ctx) {
     if (request.method === 'OPTIONS') {
       const { pathname } = new URL(request.url);

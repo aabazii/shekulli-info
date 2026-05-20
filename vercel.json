@@ -10,7 +10,5 @@
     "api/scrape.js":       { "maxDuration": 60 },
     "api/scrape-sport.js": { "maxDuration": 60 }
   },
-  "crons": [
-    { "path": "/api/scrape", "schedule": "0 0 * * *" }
-  ]
+  "crons": []
 }

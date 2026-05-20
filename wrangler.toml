@@ -14,3 +14,6 @@ id = "c214c0482e8043a091f472b1477598a5"
 [[r2_buckets]]
 binding = "BUCKET"
 bucket_name = "shekulli"
+
+[triggers]
+crons = ["0 0 * * *"]

@@ -5,10 +5,19 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Shekulli.info</title>
+  <meta name="description" id="meta-desc" content="Lajme shqiptare — Shekulli.info">
+  <link rel="canonical" id="canonical" href="https://shekulli.info/article">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="Shekulli.info">
+  <meta property="og:title" id="og-title" content="Shekulli.info">
+  <meta property="og:description" id="og-desc" content="">
+  <meta property="og:image" id="og-image" content="https://shekulli.info/assets/og-image.png">
+  <meta property="og:url" id="og-url" content="https://shekulli.info/article">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" id="tw-title" content="Shekulli.info">
+  <meta name="twitter:description" id="tw-desc" content="">
+  <meta name="twitter:image" id="tw-image" content="https://shekulli.info/assets/og-image.png">
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="colors_and_type.css">
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -83,7 +92,7 @@
       </div>
     </div>
     <div class="footer__legal">
-      <span>© 2026 Shekulli.info · Të gjitha të drejtat e rezervuara</span>
+      <span>© 2026 Shekulli.info · Të gjitha të drejtat e rezervuara · <a href="/privacy" style="color:inherit;text-decoration:underline;">Privatësia</a></span>
     </div>
   </footer>
 
@@ -103,6 +112,22 @@
         container.innerHTML = '<p style="text-align:center;padding:80px 0;font-family:var(--font-sans);">Artikulli nuk u gjet.</p>';
       } else {
         document.title = article.title + ' — Shekulli.info';
+        const _desc = (article.standfirst || '').slice(0, 160);
+        const _url  = 'https://shekulli.info/article?id=' + article.id;
+        const _img  = article.photo || 'https://shekulli.info/assets/og-image.png';
+        document.getElementById('meta-desc').content  = _desc;
+        document.getElementById('canonical').href      = _url;
+        document.getElementById('og-title').content   = article.title + ' — Shekulli.info';
+        document.getElementById('og-desc').content    = _desc;
+        document.getElementById('og-image').content   = _img;
+        document.getElementById('og-url').content     = _url;
+        document.getElementById('tw-title').content   = article.title + ' — Shekulli.info';
+        document.getElementById('tw-desc').content    = _desc;
+        document.getElementById('tw-image').content   = _img;
+        const _ld = document.createElement('script');
+        _ld.type = 'application/ld+json';
+        _ld.text = JSON.stringify({"@context":"https://schema.org","@type":"NewsArticle","headline":article.title,"description":_desc,"image":_img,"datePublished":new Date(article.published).toISOString(),"author":{"@type":"Organization","name":"Shekulli.info"},"publisher":{"@type":"Organization","name":"Shekulli.info","url":"https://shekulli.info"},"url":_url,"inLanguage":"sq"});
+        document.head.appendChild(_ld);
 
         // Track view
         fetch('/api/views', {

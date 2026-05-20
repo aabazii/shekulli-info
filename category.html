@@ -5,10 +5,17 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Shekulli.info</title>
+  <meta name="description" id="meta-desc" content="Lajme shqiptare — Shekulli.info">
+  <link rel="canonical" id="canonical" href="https://shekulli.info/category">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Shekulli.info">
+  <meta property="og:title" id="og-title" content="Shekulli.info">
+  <meta property="og:description" id="og-desc" content="">
+  <meta property="og:url" id="og-url" content="https://shekulli.info/category">
+  <meta property="og:image" content="https://shekulli.info/assets/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://shekulli.info/assets/og-image.png">
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="colors_and_type.css">
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -89,7 +96,7 @@
       </div>
     </div>
     <div class="footer__legal">
-      <span>© 2026 Shekulli.info · Të gjitha të drejtat e rezervuara</span>
+      <span>© 2026 Shekulli.info · Të gjitha të drejtat e rezervuara · <a href="/privacy" style="color:inherit;text-decoration:underline;">Privatësia</a></span>
     </div>
   </footer>
   </footer>
@@ -105,6 +112,13 @@
       const articles = cat ? getArticlesByCategory(cat) : getArticles();
 
       document.title = (cat || 'Të gjitha') + ' — Shekulli.info';
+      const _catUrl  = 'https://shekulli.info/category' + (cat ? '?cat=' + encodeURIComponent(cat) : '');
+      const _catDesc = (cat ? cat + ' — lajmet më të fundit nga Shekulli.info' : 'Të gjitha lajmet nga Shekulli.info');
+      document.getElementById('meta-desc').content = _catDesc;
+      document.getElementById('canonical').href     = _catUrl;
+      document.getElementById('og-title').content  = (cat || 'Të gjitha') + ' — Shekulli.info';
+      document.getElementById('og-desc').content   = _catDesc;
+      document.getElementById('og-url').content    = _catUrl;
 
       /* Mark active nav */
       document.querySelectorAll('.masthead__nav-item').forEach(a => {

@@ -162,6 +162,20 @@ export async function handleScrape(request, env) {
 
     await kvSet(env, 'posts', merged);
 
+    // Comment the shekulli.info article link on each newly-scraped Facebook post
+    if (toAdd.length > 0 && token) {
+      await Promise.allSettled(toAdd.map(article =>
+        fetch(`https://graph.facebook.com/${GRAPH_VER}/${article.id}/comments`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: `Lexo artikullin e plotë 👉 https://shekulli.info/article?id=${encodeURIComponent(String(article.id))}`,
+            access_token: token,
+          }),
+        }).catch(() => {})
+      ));
+    }
+
     const parts = [];
     if (added)   parts.push(`${added} new`);
     if (updated) parts.push(`${updated} updated`);

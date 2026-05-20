@@ -120,8 +120,9 @@ function buildCard(article, size) {
   a.href = 'article?id=' + article.id;
   a.className = 'story' + (size === 'lg' ? ' card--lg' : size === 'sm' ? ' card--sm' : '');
 
-  const photoHtml = size !== 'sm' ? `
-    <div class="story__photo" style="background-image:url('${article.photo || ''}');${!article.photo ? 'background:linear-gradient(135deg,#1d2f55,#0b1830)' : ''}"></div>` : '';
+  const photoHtml = size !== 'sm'
+    ? '<div class="story__photo" ' + (article.photo ? 'data-bg="' + article.photo + '"' : 'style="background:linear-gradient(135deg,#1d2f55,#0b1830)"') + '></div>'
+    : '';
 
   a.innerHTML = photoHtml + `
     <div class="story__copy">
@@ -138,8 +139,8 @@ function buildListCard(article) {
   a.href = 'article?id=' + article.id;
   a.className = 'story';
   a.style.cssText = 'display:grid;grid-template-columns:200px 1fr;gap:24px;border-top:1px solid var(--rule);padding-top:18px;';
-  a.innerHTML = `
-    <div class="story__photo" style="aspect-ratio:4/3;${article.photo ? "background-image:url('" + article.photo + "')" : 'background:linear-gradient(135deg,#1d2f55,#0b1830)'};margin:0;"></div>
+  const _listPhoto = '<div class="story__photo" style="aspect-ratio:4/3;margin:0;' + (!article.photo ? 'background:linear-gradient(135deg,#1d2f55,#0b1830)' : '') + '"' + (article.photo ? ' data-bg="' + article.photo + '"' : '') + '></div>';
+  a.innerHTML = _listPhoto + `
     <div class="story__copy">
       <span class="kicker">${article.category.toUpperCase()}</span>
       <h3 class="story__headline" style="font-size:22px;">${article.title}</h3>

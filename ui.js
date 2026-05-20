@@ -216,6 +216,47 @@
     }
   }
 
+  function showToast(msg, duration) {
+    duration = duration || 2800;
+    var el = document.getElementById('ui-toast');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'ui-toast';
+      document.body.appendChild(el);
+    }
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(el._timer);
+    el._timer = setTimeout(function () { el.classList.remove('show'); }, duration);
+  }
+  window.showToast = showToast;
+
+  function initLazyImages() {
+    var obs = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        var el = entry.target;
+        if (el.dataset.bg) el.style.backgroundImage = "url('" + el.dataset.bg + "')";
+        obs.unobserve(el);
+      });
+    }, { rootMargin: '300px' });
+
+    function observe(root) {
+      root.querySelectorAll('[data-bg]').forEach(function (el) { obs.observe(el); });
+    }
+    observe(document);
+
+    new MutationObserver(function (mutations) {
+      mutations.forEach(function (m) {
+        m.addedNodes.forEach(function (node) {
+          if (node.nodeType !== 1) return;
+          if (node.matches && node.matches('[data-bg]')) obs.observe(node);
+          if (node.querySelectorAll) node.querySelectorAll('[data-bg]').forEach(function (el) { obs.observe(el); });
+        });
+      });
+    }).observe(document.body, { childList: true, subtree: true });
+  }
+
   function initProgressBar() {
     const bar = document.createElement('div');
     bar.id = 'read-progress';
@@ -251,6 +292,7 @@
 
     initProgressBar();
     initBackToTop();
+    initLazyImages();
   }
 
   if (document.readyState === 'loading') {

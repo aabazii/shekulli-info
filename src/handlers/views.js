@@ -20,8 +20,11 @@ export async function handleViews(request, env) {
   if (request.method === 'GET') {
     try {
       const url = new URL(request.url);
-      const limit = Math.min(parseInt(url.searchParams.get('limit') || '5'), 20);
       const views = await kvGet(env, 'post_views') || {};
+      if (url.searchParams.get('all') === 'true') {
+        return json({ views });
+      }
+      const limit = Math.min(parseInt(url.searchParams.get('limit') || '5'), 20);
       const ids = Object.entries(views)
         .sort(([, a], [, b]) => b - a)
         .slice(0, limit)

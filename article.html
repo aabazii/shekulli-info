@@ -193,7 +193,7 @@
 
     <div style="margin-top:32px;padding-top:24px;border-top:1px solid var(--rule);display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-family:var(--font-sans);font-size:13px;color:var(--ink-3);">
       <span>Shpërndaje:</span>
-      <button onclick="navigator.share ? navigator.share({title:document.title,url:location.href}) : navigator.clipboard.writeText(location.href).then(()=>alert('Lidhja u kopjua!'))" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:#1456C7;color:#fff;border:none;border-radius:6px;font-family:var(--font-sans);font-size:13px;font-weight:600;cursor:pointer;">
+      <button onclick="navigator.share ? navigator.share({title:document.title,url:location.href}) : navigator.clipboard.writeText(location.href).then(()=>showToast('✓ Lidhja u kopjua!'))" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:#1456C7;color:#fff;border:none;border-radius:6px;font-family:var(--font-sans);font-size:13px;font-weight:600;cursor:pointer;">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></svg>
         Kopjo lidhjen
       </button>

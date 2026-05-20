@@ -629,6 +629,15 @@
 
     const CATS = ['Të gjitha', 'Politikë', 'Kosovë', 'Botë', 'Ekonomi', 'Sport', 'Kulturë', 'Opinion', 'Lajme'];
     let activeFilter = 'Të gjitha';
+    let viewCounts = {};
+
+    async function loadViewCounts() {
+      try {
+        const res = await fetch('/api/views?all=true');
+        const data = await res.json();
+        viewCounts = data.views || {};
+      } catch (_) {}
+    }
 
     function renderFilterChips() {
       const bar = document.getElementById('cat-filters');
@@ -660,7 +669,7 @@
       <div>
         <div class="article-item__cat">${a.category}</div>
         <p class="article-item__title" onclick="editArticle('${a.id}')">${a.title}</p>
-        <div class="article-item__meta">${a.author} · ${timeAgo(a.published)}</div>
+        <div class="article-item__meta">${a.author} · ${timeAgo(a.published)}${viewCounts[String(a.id)] ? ' · <span style="color:var(--brand-red);font-weight:600;">' + (viewCounts[String(a.id)] >= 1000 ? (viewCounts[String(a.id)] / 1000).toFixed(1) + 'k' : viewCounts[String(a.id)]) + ' lexime</span>' : ''}</div>
       </div>
       <div class="article-item__actions">
         <a href="article?id=${a.id}" target="_blank" class="btn btn--ghost btn--sm" title="Shiko">
@@ -679,8 +688,8 @@
 
     window.addEventListener('load', () => {
       renderFilterChips();
-      window.ShekullDB.refreshFromAPI(() => renderList());
-      renderList();
+      loadViewCounts().then(() => renderList());
+      window.ShekullDB.refreshFromAPI(() => { loadViewCounts().then(() => renderList()); });
     });
   </script>
 </body>

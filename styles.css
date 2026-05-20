@@ -93,6 +93,30 @@ ol {
   color: #fff;
 }
 
+#ui-toast {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%) translateY(16px);
+  background: var(--ink-1);
+  color: var(--paper);
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 600;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 200;
+  white-space: nowrap;
+  transition: opacity 0.22s, transform 0.22s;
+}
+
+#ui-toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
 [data-theme="dark"] .masthead__tagline {
   color: #fff;
 }

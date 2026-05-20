@@ -1,5 +1,5 @@
 import { kvGet, kvSet } from '../../lib/kv.js';
-import { json, cors, isAuthed } from '../../lib/response.js';
+import { adminJson, cors, isAuthed } from '../../lib/response.js';
 import { mirrorImage } from '../../lib/r2.js';
 
 const JUNK = 'See more|Shiko më shumë|Comment|Like|Share|Koment|Pëlqej|Shpërnda';
@@ -18,7 +18,7 @@ function cleanText(str) {
 export async function handleUtils(request, env) {
   if (request.method === 'OPTIONS') return cors();
   if (request.method !== 'POST') return new Response(null, { status: 405 });
-  if (!isAuthed(request, env)) return json({ ok: false }, 401);
+  if (!isAuthed(request, env)) return adminJson({ ok: false }, 401);
 
   const action = new URL(request.url).searchParams.get('action');
 
@@ -31,19 +31,19 @@ export async function handleUtils(request, env) {
       return { ...p, title: t, standfirst: s, body: b };
     });
     await kvSet(env, 'posts', updated);
-    return json({ ok: true, message: `Fixed ${fixed} of ${posts.length} posts` });
+    return adminJson({ ok: true, message: `Fixed ${fixed} of ${posts.length} posts` });
   }
 
   if (action === 'fix-timestamps') {
     const posts = await kvGet(env, 'posts') || [];
     const fixed = posts.map(p => ({ ...p, published: p.published < 1e12 ? p.published * 1000 : p.published }));
     await kvSet(env, 'posts', fixed);
-    return json({ ok: true, message: `Fixed timestamps on ${fixed.length} posts` });
+    return adminJson({ ok: true, message: `Fixed timestamps on ${fixed.length} posts` });
   }
 
   if (action === 'clear') {
     await kvSet(env, 'posts', []);
-    return json({ ok: true, message: 'All posts cleared.' });
+    return adminJson({ ok: true, message: 'All posts cleared.' });
   }
 
   if (action === 'fix-images') {
@@ -52,7 +52,7 @@ export async function handleUtils(request, env) {
 
     const posts  = await kvGet(env, 'posts') || [];
     const broken = posts.filter(p => !p.photo || p.photo.includes('vercel-storage.com') || p.photo.includes('blob.vercel'));
-    if (broken.length === 0) return json({ ok: true, message: 'No broken images found' });
+    if (broken.length === 0) return adminJson({ ok: true, message: 'No broken images found' });
 
     const fbIds = broken.filter(p => p.fb_post_id).map(p => p.fb_post_id);
     const freshPhotos = {};
@@ -84,8 +84,8 @@ export async function handleUtils(request, env) {
     }));
 
     await kvSet(env, 'posts', Array.from(postMap.values()));
-    return json({ ok: true, message: `Fixed ${fixed} of ${broken.length} broken images` });
+    return adminJson({ ok: true, message: `Fixed ${fixed} of ${broken.length} broken images` });
   }
 
-  return json({ ok: false, message: 'Unknown action. Use ?action=fix-posts|fix-timestamps|clear|fix-images' }, 400);
+  return adminJson({ ok: false, message: 'Unknown action. Use ?action=fix-posts|fix-timestamps|clear|fix-images' }, 400);
 }

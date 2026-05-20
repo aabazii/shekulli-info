@@ -1,5 +1,5 @@
 import { kvGet, kvSet } from '../../lib/kv.js';
-import { json, cors, isAuthed } from '../../lib/response.js';
+import { adminJson, cors, isAuthed } from '../../lib/response.js';
 import { guessCategory } from '../../lib/category.js';
 
 function clean(text) {
@@ -11,12 +11,12 @@ function clean(text) {
 
 export async function handleImport(request, env) {
   if (request.method === 'OPTIONS') return cors();
-  if (request.method !== 'POST') return json({ ok: false, message: 'Method not allowed' }, 405);
-  if (!isAuthed(request, env)) return json({ ok: false, message: 'Unauthorized' }, 401);
+  if (request.method !== 'POST') return adminJson({ ok: false, message: 'Method not allowed' }, 405);
+  if (!isAuthed(request, env)) return adminJson({ ok: false, message: 'Unauthorized' }, 401);
 
   try {
     const { posts } = await request.json();
-    if (!Array.isArray(posts)) return json({ ok: false, message: 'posts must be an array' }, 400);
+    if (!Array.isArray(posts)) return adminJson({ ok: false, message: 'posts must be an array' }, 400);
 
     const validated = posts.map(p => {
       const text = p.text || p.title || '';
@@ -64,7 +64,7 @@ export async function handleImport(request, env) {
     }
 
     if (addedCount === 0 && updatedCount === 0) {
-      return json({ ok: true, message: 'No new posts (all duplicates)' });
+      return adminJson({ ok: true, message: 'No new posts (all duplicates)' });
     }
 
     const merged = [...toAdd, ...Array.from(existingMap.values())]
@@ -77,8 +77,9 @@ export async function handleImport(request, env) {
       addedCount   > 0 ? `${addedCount} new` : '',
       updatedCount > 0 ? `${updatedCount} updated` : '',
     ].filter(Boolean).join(', ');
-    return json({ ok: true, message: `✅ ${parts} (${merged.length} total)` });
+    return adminJson({ ok: true, message: `✅ ${parts} (${merged.length} total)` });
   } catch (e) {
-    return json({ ok: false, message: e.message }, 500);
+    console.error('Import error:', e);
+    return adminJson({ ok: false, message: 'Internal server error' }, 500);
   }
 }

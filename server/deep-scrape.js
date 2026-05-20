@@ -14,7 +14,7 @@ const path      = require('path');
 const SESSION_FILE = path.join(__dirname, 'fb-session.json');
 const FB_PAGE      = 'https://www.facebook.com/shekulliinfo';
 const VERCEL_URL   = process.env.VERCEL_URL    || 'https://shekulli.vercel.app';
-const ADMIN_PASS   = process.env.ADMIN_PASSWORD || 'shekulli2026';
+const ADMIN_PASS   = process.env.ADMIN_PASSWORD;
 
 // How many scroll passes — each loads ~1-2 more posts
 const SCROLL_PASSES = 50;

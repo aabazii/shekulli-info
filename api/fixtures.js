@@ -59,6 +59,6 @@ module.exports = async function handler(req, res) {
 
     res.json({ matches });
   } catch (err) {
-    res.status(500).json({ matches: [], error: err.message });
+    res.status(500).json({ matches: [], error: 'Internal server error' });
   }
 };

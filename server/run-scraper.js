@@ -8,7 +8,7 @@
  *
  * Requires:
  *   FB_PAGE_TOKEN  — Page Access Token for the shekulliinfo page
- *   ADMIN_PASSWORD — Vercel admin password (default: shekulli2026)
+ *   ADMIN_PASSWORD — Vercel admin password (required, set in .env)
  *   VERCEL_URL     — Deployed site URL (default: https://shekulli.vercel.app)
  *
  * Run once:       node server/run-scraper.js
@@ -18,7 +18,7 @@
 const GRAPH_VER   = 'v21.0';
 const FB_PAGE_ID  = 'shekulliinfo';
 const VERCEL_URL  = process.env.VERCEL_URL     || 'https://shekulli.vercel.app';
-const ADMIN_PASS  = process.env.ADMIN_PASSWORD  || 'shekulli2026';
+const ADMIN_PASS  = process.env.ADMIN_PASSWORD;
 const FB_TOKEN    = process.env.FB_PAGE_TOKEN;
 const FB_APP_ID   = process.env.FB_APP_ID;
 const FB_APP_SECRET = process.env.FB_APP_SECRET;

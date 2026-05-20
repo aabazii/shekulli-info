@@ -12,6 +12,7 @@ export async function handleArticles(request, env) {
     filtered = filtered.slice(offset, offset + limit);
     return json(filtered);
   } catch (e) {
-    return json({ error: e.message }, 500);
+    console.error('Articles error:', e);
+    return json({ error: 'Internal server error' }, 500);
   }
 }

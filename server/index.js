@@ -52,8 +52,9 @@ app.get('/api/articles/:id', (req, res) => {
 });
 
 /* ── Auth middleware ──────────────────────────────────────────────── */
-const ADMIN_PASSWORD = 'shekulli2026';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 function checkAuth(req, res, next) {
+  if (!ADMIN_PASSWORD) return res.status(500).json({ ok: false, message: 'ADMIN_PASSWORD not set' });
   const token = req.get('Authorization')?.replace('Bearer ', '');
   if (token !== ADMIN_PASSWORD) {
     return res.status(401).json({ ok: false, message: 'Unauthorized' });

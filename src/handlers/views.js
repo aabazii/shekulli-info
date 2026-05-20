@@ -13,7 +13,7 @@ export async function handleViews(request, env) {
       await kvSet(env, 'post_views', views);
       return json({ ok: true });
     } catch (e) {
-      return json({ ok: false, message: e.message }, 500);
+      return json({ ok: false, message: 'Internal server error' }, 500);
     }
   }
 
@@ -28,7 +28,7 @@ export async function handleViews(request, env) {
         .map(([id]) => id);
       return json({ ids });
     } catch (e) {
-      return json({ ok: false, message: e.message }, 500);
+      return json({ ok: false, message: 'Internal server error' }, 500);
     }
   }
 

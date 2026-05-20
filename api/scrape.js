@@ -5,9 +5,7 @@ const FB_PAGE_ID   = 'shekulliinfo';
 const FB_TOKEN     = process.env.FB_PAGE_TOKEN;
 const FB_APP_ID    = process.env.FB_APP_ID;
 const FB_APP_SECRET = process.env.FB_APP_SECRET;
-const ADMIN_PASS   = process.env.ADMIN_PASSWORD || 'shekulli2026';
-// VERCEL_URL system var has no protocol — always use the canonical production URL
-const VERCEL_URL   = 'https://shekulli.info';
+const VERCEL_URL = 'https://shekulli.info';
 
 // ── Token resolution — stores permanent page token in KV so it survives restarts
 // headerToken: short-lived token passed via X-FB-Token header from GitHub Actions
@@ -100,7 +98,7 @@ async function mirrorImage(fbUrl, ts) {
     const ext = fbUrl.includes('.png') ? 'png' : 'jpg';
     const uploadRes = await fetch(`${VERCEL_URL}/api/admin/upload?filename=fb-${ts}.${ext}`, {
       method: 'POST',
-      headers: { 'Content-Type': `image/${ext}`, 'Authorization': `Bearer ${ADMIN_PASS}` },
+      headers: { 'Content-Type': `image/${ext}`, 'Authorization': `Bearer ${process.env.ADMIN_PASSWORD}` },
       body: buf,
       signal: AbortSignal.timeout(10000),
     });
@@ -124,12 +122,14 @@ async function fetchPosts(token) {
 // ── Handler ──────────────────────────────────────────────────────────────────
 
 module.exports = async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Origin', 'https://shekulli.info');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   const auth = (req.headers.authorization || '').replace('Bearer ', '');
   const isVercelCron = req.headers['x-vercel-cron'] === '1';
-  if (!isVercelCron && auth !== ADMIN_PASS) {
+  const adminPass = process.env.ADMIN_PASSWORD;
+  if (!adminPass) return res.status(500).json({ ok: false, message: 'Server misconfigured' });
+  if (!isVercelCron && auth !== adminPass) {
     return res.status(401).json({ ok: false, message: 'Unauthorized' });
   }
 
@@ -276,6 +276,6 @@ module.exports = async function handler(req, res) {
 
   } catch (err) {
     console.error('Scrape error:', err);
-    return res.status(500).json({ ok: false, message: err.message });
+    return res.status(500).json({ ok: false, message: 'Internal server error' });
   }
 };

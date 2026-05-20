@@ -1,16 +1,16 @@
 const { kv } = require('@vercel/kv');
 
-const ADMIN_PASS = process.env.ADMIN_PASSWORD || 'shekulli2026';
-
 module.exports = async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Origin', 'https://shekulli.info');
   res.setHeader('Access-Control-Allow-Methods', 'PUT, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'PUT') return res.status(405).json({ ok: false, message: 'Method not allowed' });
 
+  const adminPass = process.env.ADMIN_PASSWORD;
+  if (!adminPass) return res.status(500).json({ ok: false, message: 'Server misconfigured' });
   const auth = (req.headers.authorization || '').replace('Bearer ', '');
-  if (auth !== ADMIN_PASS) return res.status(401).json({ ok: false, message: 'Unauthorized' });
+  if (auth !== adminPass) return res.status(401).json({ ok: false, message: 'Unauthorized' });
 
   const { article } = req.body || {};
   if (!article || !article.id) return res.status(400).json({ ok: false, message: 'Missing article or id' });

@@ -1,21 +1,30 @@
-import { json, cors, isAuthed } from '../../lib/response.js';
+import { adminJson, cors, isAuthed } from '../../lib/response.js';
 
-const PUBLIC_R2_URL = 'https://pub-a3d012dde3734d7595b3c2796f7ec96a.r2.dev';
+const ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
+const MAX_BYTES = 10 * 1024 * 1024; // 10 MB
 
 export async function handleUpload(request, env) {
   if (request.method === 'OPTIONS') return cors();
-  if (request.method !== 'POST') return json({ ok: false }, 405);
-  if (!isAuthed(request, env)) return json({ ok: false, message: 'Unauthorized' }, 401);
+  if (request.method !== 'POST') return adminJson({ ok: false }, 405);
+  if (!isAuthed(request, env)) return adminJson({ ok: false, message: 'Unauthorized' }, 401);
 
-  const filename    = new URL(request.url).searchParams.get('filename') || `photo-${Date.now()}.jpg`;
-  const key         = `${Date.now()}-${filename}`;
-  const contentType = request.headers.get('Content-Type') || 'image/jpeg';
+  const contentType = (request.headers.get('Content-Type') || '').split(';')[0].trim();
+  if (!ALLOWED_TYPES.has(contentType)) {
+    return adminJson({ ok: false, message: 'Invalid file type' }, 415);
+  }
+
+  const filename = new URL(request.url).searchParams.get('filename') || `photo-${Date.now()}.jpg`;
+  const key      = `${Date.now()}-${filename}`;
 
   try {
     const buf = await request.arrayBuffer();
+    if (buf.byteLength > MAX_BYTES) {
+      return adminJson({ ok: false, message: 'File too large (max 10 MB)' }, 413);
+    }
     await env.BUCKET.put(key, buf, { httpMetadata: { contentType } });
-    return json({ ok: true, url: `${PUBLIC_R2_URL}/${key}` });
+    return adminJson({ ok: true, url: `/img/${key}` });
   } catch (e) {
-    return json({ ok: false, message: e.message }, 500);
+    console.error('Upload error:', e);
+    return adminJson({ ok: false, message: 'Internal server error' }, 500);
   }
 }

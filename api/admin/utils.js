@@ -4,7 +4,6 @@
  */
 const { kv } = require('@vercel/kv');
 
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'shekulli2026';
 
 const JUNK = 'See more|Shiko më shumë|Comment|Like|Share|Koment|Pëlqej|Shpërnda';
 
@@ -20,12 +19,14 @@ function cleanText(str) {
 }
 
 module.exports = async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Origin', 'https://shekulli.info');
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).end();
 
+  const adminPass = process.env.ADMIN_PASSWORD;
+  if (!adminPass) return res.status(500).json({ ok: false, message: 'Server misconfigured' });
   const token = (req.headers.authorization || '').replace('Bearer ', '');
-  if (token !== ADMIN_PASSWORD) return res.status(401).json({ ok: false });
+  if (token !== adminPass) return res.status(401).json({ ok: false });
 
   const action = req.query?.action;
 
@@ -103,7 +104,7 @@ module.exports = async function handler(req, res) {
         if (buf.length < 500) return;
         const uploadRes = await fetch(`${VERCEL_URL}/api/admin/upload?filename=fix-${p.published}.${ext}`, {
           method: 'POST',
-          headers: { 'Content-Type': `image/${ext}`, 'Authorization': `Bearer ${ADMIN_PASSWORD}` },
+          headers: { 'Content-Type': `image/${ext}`, 'Authorization': `Bearer ${process.env.ADMIN_PASSWORD}` },
           body: buf,
           signal: AbortSignal.timeout(10000),
         });

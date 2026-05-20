@@ -61,12 +61,8 @@ async function fetchPosts(token) {
 export async function handleScrape(request, env) {
   if (request.method === 'OPTIONS') return cors();
 
-  const authHeader   = (request.headers.get('Authorization') || '').replace('Bearer ', '');
-  const isVercelCron = request.headers.get('x-vercel-cron') === '1';
-  const isCFCron     = request.headers.get('x-cf-cron') === '1';
-  const ADMIN_PASS   = env.ADMIN_PASSWORD || 'shekulli2026';
-
-  if (!isVercelCron && !isCFCron && authHeader !== ADMIN_PASS) {
+  const authHeader = (request.headers.get('Authorization') || '').replace('Bearer ', '');
+  if (!env.ADMIN_PASSWORD || authHeader !== env.ADMIN_PASSWORD) {
     return json({ ok: false, message: 'Unauthorized' }, 401);
   }
 
@@ -166,6 +162,6 @@ export async function handleScrape(request, env) {
     return json({ ok: true, message: `✅ ${parts.join(', ')} (${merged.length} total)` });
   } catch (e) {
     console.error('Scrape error:', e);
-    return json({ ok: false, message: e.message }, 500);
+    return json({ ok: false, message: 'Internal server error' }, 500);
   }
 }

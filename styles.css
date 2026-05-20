@@ -914,6 +914,16 @@ ol {
     padding: 16px !important;
   }
 
+  /* Category lead story — scale down on mobile */
+  #cat-articles > a.story .story__photo {
+    aspect-ratio: 16/9;
+  }
+
+  #cat-articles > a.story .h1 {
+    font-size: 20px;
+    line-height: 1.3;
+  }
+
   /* Category page — photo + title only on mobile */
   #cat-articles .deck,
   #cat-articles .standfirst,

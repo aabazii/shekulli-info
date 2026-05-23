@@ -3,10 +3,15 @@ name: Deep Scrape (Historical Posts)
 on:
   workflow_dispatch: # manual trigger only
 
+permissions:
+  contents: read
+
 jobs:
   deep-scrape:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
     steps:
       - name: Checkout code

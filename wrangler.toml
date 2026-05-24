@@ -16,4 +16,4 @@ binding = "BUCKET"
 bucket_name = "shekulli"
 
 [triggers]
-crons = ["0 * * * *"]
+crons = ["*/5 * * * *"]

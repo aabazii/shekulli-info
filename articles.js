@@ -25,7 +25,7 @@ function _save(articles) {
 const API_BASE = '/api';
 
 function refreshFromAPI(onDone) {
-  fetch(API_BASE + '/articles?limit=100')
+  fetch(API_BASE + '/articles?limit=100&t=' + Date.now())
     .then(r => r.ok ? r.json() : Promise.reject(r.status))
     .then(rows => {
       if (!Array.isArray(rows)) return;

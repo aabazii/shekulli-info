@@ -106,7 +106,7 @@ async function scrapePosts() {
 
     const page = await browser.newPage();
     await page.setUserAgent(
-      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36'
     );
 
     // Inject saved Facebook session cookies (if available)
@@ -128,79 +128,193 @@ async function scrapePosts() {
     console.log('[Scraper] Loading Facebook page…');
     await page.goto(FB_PAGE, { waitUntil: 'networkidle2', timeout: 60000 });
 
-    // Scroll a few times to load more posts
-    for (let i = 0; i < 5; i++) {
-      await page.evaluate(() => window.scrollBy(0, window.innerHeight * 3));
-      await new Promise(r => setTimeout(r, 2500));
+    // ── Detect login wall / session expiry ──────────────────────────
+    const currentUrl = page.url();
+    const pageContent = await page.content();
+    const isLoginWall = currentUrl.includes('/login') ||
+                        currentUrl.includes('checkpoint') ||
+                        pageContent.includes('id="loginbutton"') ||
+                        pageContent.includes('name="login"');
+
+    if (isLoginWall) {
+      console.error('[Scraper] ⚠️  Facebook login wall detected — session cookies have expired!');
+      console.error('[Scraper]    Run: node save-session.js    to refresh your Facebook session.');
+      return [];
     }
 
-    const rawPosts = await page.evaluate(() => {
-      const articles = document.querySelectorAll('[role="article"]');
-      const results  = [];
+    // ── Scroll to load more posts ───────────────────────────────────
+    for (let i = 0; i < 6; i++) {
+      await page.evaluate(() => window.scrollBy(0, window.innerHeight * 3));
+      await new Promise(r => setTimeout(r, 3000));
+    }
 
-      articles.forEach((el, idx) => {
-        // Text
-        const textEl = el.querySelector('[data-testid="post_message"], div[dir="auto"]');
-        let text = textEl?.innerText?.trim() || '';
-        if (!text) {
-          text = [...el.innerText.split('\n')]
-            .filter(t => t.trim().length > 10 && !/^(Like|Comment|Share|Follow|More)/i.test(t.trim()))
-            .join('\n');
+    // ── Click all "See more" / "Shiko më shumë" buttons ─────────────
+    try {
+      const seeMoreButtons = await page.$$('div[role="button"]');
+      let clickedCount = 0;
+      for (const btn of seeMoreButtons) {
+        const text = await btn.evaluate(el => el.innerText?.trim() || '');
+        if (/^(see more|shiko më shumë|mehr anzeigen|voir plus)$/i.test(text)) {
+          // Use DOM click to bypass Puppeteer overlay issues
+          await page.evaluate(el => el.click(), btn).catch(() => {});
+          clickedCount++;
+          await new Promise(r => setTimeout(r, 300));
+        }
+      }
+      if (clickedCount > 0) {
+        console.log(`[Scraper] Expanded ${clickedCount} "See more" buttons`);
+        await new Promise(r => setTimeout(r, 1000));
+      }
+    } catch (e) {
+      console.log('[Scraper] Note: Could not expand "See more" buttons:', e.message);
+    }
+
+    // ── Extract posts from the DOM ──────────────────────────────────
+    const rawPosts = await page.evaluate(() => {
+      function simpleHash(str) {
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+          const c = str.charCodeAt(i);
+          hash = ((hash << 5) - hash) + c;
+          hash |= 0;
+        }
+        return Math.abs(hash).toString(36);
+      }
+
+      const results = [];
+      const seenContainers = new Set();
+      
+      // Find all text blocks that look like post bodies
+      const textBlocks = Array.from(document.querySelectorAll('div[data-ad-preview="message"], div[dir="auto"]'));
+      
+      for (const block of textBlocks) {
+        // Traverse up to find the main post container
+        let container = block.closest('[role="article"]') || block.closest('[aria-posinset]');
+        if (!container) {
+          container = block;
+          for (let j = 0; j < 6; j++) {
+            if (container.parentElement) container = container.parentElement;
+          }
+        }
+        
+        if (seenContainers.has(container)) continue;
+        seenContainers.add(container);
+
+        // Aggregate all text inside this container
+        let text = '';
+        const msgBlock = container.querySelector('div[data-ad-preview="message"]');
+        if (msgBlock) {
+          text = msgBlock.innerText?.trim() || '';
+        } else {
+          // Fallback: join all dir="auto"
+          text = Array.from(container.querySelectorAll('div[dir="auto"]'))
+            .map(el => el.innerText?.trim())
+            .filter(t => t && t.length > 10 && !/^(Like|Comment|Share|Follow|More|Pëlqe|Komento|Shpërnda|Comment as)/i.test(t))
+            .join('\\n');
         }
 
-        // Image
+        if (text.length < 15) continue;
+
+        // Image extraction
         let image = '';
-        for (const img of el.querySelectorAll('img')) {
+        for (const img of container.querySelectorAll('img')) {
           const src = img.src || img.getAttribute('src') || '';
-          if (src && !src.includes('emoji') && !src.includes('static') && src.startsWith('http')) {
+          if (src && !src.includes('emoji') && !src.includes('static') &&
+              !src.includes('rsrc.php') && !src.includes('profile') &&
+              src.startsWith('http') && (src.includes('scontent') || src.includes('fbcdn'))) {
             image = src;
             break;
           }
         }
 
-        // Video
+        // Video extraction
         let hasVideo = false;
-        let postUrl  = '';
-        const videoEl = el.querySelector('video');
+        const videoEl = container.querySelector('video');
         if (videoEl) {
           hasVideo = true;
           image = image || videoEl.getAttribute('poster') || '';
         }
 
-        // Post link (for video embedding)
-        for (const a of el.querySelectorAll('a[href]')) {
+        // Link / ID extraction
+        let postUrl = '';
+        let fbPostId = '';
+        for (const a of container.querySelectorAll('a[href]')) {
           const href = a.href || '';
-          if (/\/(posts|videos)\/|[?&]v=/.test(href)) {
+          if (/\/(posts|videos|photos)\//.test(href) || /\/pfbid/.test(href)) {
             postUrl = href;
+            const pfbidMatch = href.match(/pfbid([A-Za-z0-9]+)/);
+            const postIdMatch = href.match(/\/posts\/(\d+)/);
+            const videoIdMatch = href.match(/\/videos\/(\d+)/);
+            fbPostId = pfbidMatch?.[0] || postIdMatch?.[1] || videoIdMatch?.[1] || '';
             break;
           }
         }
 
-        // Timestamp via abbr[data-utime]
+        // Timestamp
         let published = Date.now();
-        const abbr = el.querySelector('abbr[data-utime]');
-        if (abbr) published = parseInt(abbr.dataset.utime) * 1000;
-
-        const id = 'fb_' + idx + '_' + btoa(encodeURIComponent((text || image).slice(0, 30))).replace(/[^a-z0-9]/gi, '').slice(0, 14);
-
-        if (text || image || hasVideo) {
-          results.push({ id, text, image, published, hasVideo, postUrl });
+        const abbr = container.querySelector('abbr[data-utime]');
+        if (abbr) {
+          published = parseInt(abbr.dataset.utime) * 1000;
+        } else {
+          // Fallback: look for <a> elements that have time strings
+          for (const a of container.querySelectorAll('a')) {
+            const t = a.innerText?.trim() || '';
+            const match = t.match(/[^0-9]?([0-9]+)(m|h|d)(?:\\s|·|$)/i) || t.match(/^([0-9]+)(m|h|d)/i);
+            if (match) {
+              const num = parseInt(match[1]);
+              const unit = match[2].toLowerCase();
+              let offset = 0;
+              if (unit === 'm') offset = num * 60 * 1000;
+              if (unit === 'h') offset = num * 60 * 60 * 1000;
+              if (unit === 'd') offset = num * 24 * 60 * 60 * 1000;
+              published = Date.now() - offset;
+              break;
+            }
+          }
         }
-      });
+
+        // Stable ID
+        const contentKey = text.slice(0, 100) + '|' + (image || '').slice(0, 50);
+        const id = fbPostId || ('fb_' + simpleHash(contentKey));
+
+        results.push({ id, text, image, published, hasVideo, postUrl });
+      }
 
       return results;
     });
 
     console.log(`[Scraper] Found ${rawPosts.length} posts on page`);
     if (rawPosts.length > 0) {
-      console.log('[Scraper] Sample image:', rawPosts[0]?.image || '(none)');
+      console.log('[Scraper] Sample:', rawPosts[0]?.text?.slice(0, 80) || '(no text)');
+      console.log('[Scraper] Sample image:', rawPosts[0]?.image?.slice(0, 60) || '(none)');
     }
 
-    if (rawPosts.length === 0) return [];
+    if (rawPosts.length === 0) {
+      console.warn('[Scraper] ⚠️  No posts found on page. Possible causes:');
+      console.warn('  - Session cookies expired → run: node save-session.js');
+      console.warn('  - Facebook changed their DOM structure');
+      console.warn('  - The page has no public posts');
+      return [];
+    }
 
+    if (rawPosts.length <= 2) {
+      console.warn(`[Scraper] ⚠️  Only ${rawPosts.length} post(s) found — session may be expiring soon.`);
+      console.warn('[Scraper]    Consider refreshing: node save-session.js');
+    }
+
+    // ── Merge with existing posts ───────────────────────────────────
     const existing    = loadPosts();
     const existingIds = new Set(existing.map(p => String(p.id)));
-    const newRaw      = rawPosts.filter(p => !existingIds.has(String(p.id)));
+    
+    // Deduplicate new posts against themselves and existing posts
+    const newRaw = [];
+    for (const p of rawPosts) {
+      const pid = String(p.id);
+      if (!existingIds.has(pid)) {
+        existingIds.add(pid);
+        newRaw.push(p);
+      }
+    }
 
     if (newRaw.length === 0) {
       console.log('[Scraper] No new posts.');

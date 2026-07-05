@@ -6,6 +6,14 @@ import { checkRateLimit } from '../lib/rateLimit.js';
 
 const GRAPH_VER = 'v21.0';
 const FB_PAGE_ID = 'shekulliinfo';
+const AUTH_ERROR_CODES = new Set([102, 104, 190, 463, 467]);
+
+async function clearTokenCache(env) {
+  await Promise.all([
+    env.KV.delete('fb_permanent_token'),
+    env.KV.delete('fb_longlived_token'),
+  ]);
+}
 
 function clean(text) {
   return (text || '')
@@ -18,8 +26,9 @@ async function resolveToken(env, headerToken) {
   const cached = await env.KV.get('fb_permanent_token');
   if (cached) return cached;
 
+  const baseToken = headerToken || env.FB_PAGE_TOKEN;
   const kvLongLived = await env.KV.get('fb_longlived_token');
-  const sourceToken = kvLongLived || headerToken || env.FB_PAGE_TOKEN;
+  let sourceToken = kvLongLived || baseToken;
   if (!sourceToken) return null;
 
   const { FB_APP_ID, FB_APP_SECRET } = env;
@@ -32,6 +41,27 @@ async function resolveToken(env, headerToken) {
       `&client_secret=${FB_APP_SECRET}&fb_exchange_token=${sourceToken}`
     );
     const ltData = await ltRes.json();
+
+    // If KV long-lived token is stale, clear it and retry with the env base token
+    if (ltData.error && kvLongLived && baseToken && baseToken !== kvLongLived) {
+      console.warn('[Token] Cached long-lived token stale, retrying with env token');
+      await env.KV.delete('fb_longlived_token');
+      sourceToken = baseToken;
+      const retryRes = await fetch(
+        `https://graph.facebook.com/${GRAPH_VER}/oauth/access_token` +
+        `?grant_type=fb_exchange_token&client_id=${FB_APP_ID}` +
+        `&client_secret=${FB_APP_SECRET}&fb_exchange_token=${sourceToken}`
+      );
+      const retryData = await retryRes.json();
+      if (retryData.access_token) {
+        ltData.access_token = retryData.access_token;
+        ltData.error = null;
+      } else {
+        console.warn('[Token] Env token exchange also failed:', retryData.error?.message);
+        return sourceToken;
+      }
+    }
+
     const longLivedToken = ltData.access_token || sourceToken;
     if (ltData.access_token) await env.KV.put('fb_longlived_token', longLivedToken);
 
@@ -53,10 +83,19 @@ async function resolveToken(env, headerToken) {
 async function fetchPosts(token) {
   const fields = 'id,message,full_picture,attachments{type,media,url},created_time,permalink_url';
   const url = `https://graph.facebook.com/${GRAPH_VER}/${FB_PAGE_ID}/posts?fields=${fields}&limit=30&access_token=${token}`;
-  const res  = await fetch(url, { signal: AbortSignal.timeout(15000) });
-  const data = await res.json();
-  if (data.error) throw Object.assign(new Error(data.error.message), { code: data.error.code });
-  return data.data || [];
+  let lastErr;
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      const res  = await fetch(url, { signal: AbortSignal.timeout(15000) });
+      const data = await res.json();
+      if (data.error) throw Object.assign(new Error(data.error.message), { code: data.error.code });
+      return data.data || [];
+    } catch (e) {
+      lastErr = e;
+      if (e.code !== undefined) throw e; // API error — don't retry
+    }
+  }
+  throw lastErr;
 }
 
 export async function handleScrape(request, env) {
@@ -74,8 +113,8 @@ export async function handleScrape(request, env) {
 
   const url = new URL(request.url);
   if (url.searchParams.get('reset') === 'token') {
-    await env.KV.delete('fb_permanent_token');
-    return json({ ok: true, message: 'Cached token cleared' });
+    await clearTokenCache(env);
+    return json({ ok: true, message: 'Cached tokens cleared (both permanent and long-lived)' });
   }
 
   try {
@@ -87,7 +126,10 @@ export async function handleScrape(request, env) {
     try {
       fbPosts = await fetchPosts(token);
     } catch (tokenErr) {
-      if (tokenErr.code === 190) await env.KV.delete('fb_permanent_token');
+      if (AUTH_ERROR_CODES.has(tokenErr.code)) {
+        await clearTokenCache(env);
+        console.error(`[Scrape] Auth error ${tokenErr.code} — cleared token cache for self-recovery`);
+      }
       throw tokenErr;
     }
 
@@ -164,16 +206,17 @@ export async function handleScrape(request, env) {
 
     // Comment the shekulli.info article link on each newly-scraped Facebook post
     if (toAdd.length > 0 && token) {
-      await Promise.allSettled(toAdd.map(article =>
-        fetch(`https://graph.facebook.com/${GRAPH_VER}/${article.id}/comments`, {
+      await Promise.allSettled(toAdd.map(article => {
+        const params = new URLSearchParams({
+          message: `Lexo artikullin e plotë 👉 https://shekulli.info/article?id=${encodeURIComponent(String(article.id))}`,
+          access_token: token,
+        });
+        return fetch(`https://graph.facebook.com/${GRAPH_VER}/${article.fb_post_id}/comments`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            message: `Lexo artikullin e plotë 👉 https://shekulli.info/article?id=${encodeURIComponent(String(article.id))}`,
-            access_token: token,
-          }),
-        }).catch(() => {})
-      ));
+          body: params,
+          signal: AbortSignal.timeout(10000),
+        }).catch(() => {});
+      }));
     }
 
     const parts = [];

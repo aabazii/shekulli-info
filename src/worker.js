@@ -1,4 +1,7 @@
 import { handleArticles }   from './handlers/articles.js';
+import { handleArticleSSR } from './handlers/article-ssr.js';
+import { handleCategorySSR } from './handlers/category-ssr.js';
+import { handleSitemap }    from './handlers/sitemap.js';
 import { handleViews }      from './handlers/views.js';
 import { handleHealth }     from './handlers/health.js';
 import { handleScrape }     from './handlers/scrape.js';
@@ -63,6 +66,11 @@ export default {
     const { pathname } = new URL(request.url);
     const handler = ROUTES[pathname];
     if (handler) return handler(request, env);
+
+    // SSR meta tags so social crawlers see real titles/images
+    if (pathname === '/article')  return handleArticleSSR(request, env);
+    if (pathname === '/category') return handleCategorySSR(request, env);
+    if (pathname === '/sitemap.xml') return handleSitemap(request, env);
 
     // Serve R2 images through the Worker so they load from same origin
     if (pathname.startsWith('/img/')) {

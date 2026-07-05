@@ -1,0 +1,97 @@
+node:events:487
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::4000
+    at Server.setupListenHandle [as _listen2] (node:net:2008:16)
+    at listenInCluster (node:net:2065:12)
+    at Server.listen (node:net:2170:7)
+    at app.listen (/Users/ajani/Desktop/Shekulli/server/node_modules/express/lib/application.js:635:24)
+    at Object.<anonymous> (/Users/ajani/Desktop/Shekulli/server/index.js:157:5)
+    at Module._compile (node:internal/modules/cjs/loader:1829:14)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1969:10)
+    at Module.load (node[Scraper] Note: Could not expand "See more" buttons: Attempted to use detached Frame 'D3E5FD827A127ED304BAC957C06AD6CD'.
+[Scraper] Error: Attempted to use detached Frame 'D3E5FD827A127ED304BAC957C06AD6CD'.
+[Scraper] Launching browser…
+[Scraper] Loaded 8 session cookies
+[Scraper] Loading Facebook page…
+[Scraper] Expanded 4 "See more" buttons
+[Scraper] Found 6 posts on page
+[Scraper] Sample: Skandal me doping në Kupën e Botës, tetë lojtarë të kombëtares së njohur rezultu
+[Scraper] Sample image: https://scontent.fprn1-1.fna.fbcdn.net/v/t39.99422-6/7397740
+[Scraper] No new posts.
+[Scraper] Launching browser…
+[Scraper] Loaded 8 session cookies
+[Scraper] Loading Facebook page…
+[Scraper] Expanded 4 "See more" buttons
+[Scraper] Found 6 posts on page
+[Scraper] Sample: Skandal me doping në Kupën e Botës, tetë lojtarë të kombëtares së njohur rezultu
+[Scraper] Sample image: https://scontent.fprn1-1.fna.fbcdn.net/v/t39.99422-6/7397740
+[Scraper] No new posts.
+[Scraper] Launching browser…
+[Scraper] Loaded 8 session cookies
+[Scraper] Loading Facebook page…
+[Scraper] Expanded 3 "See more" buttons
+[Scraper] Found 3 posts on page
+[Scraper] Sample: Zeka paralajmëron rrezikun e zhvendosjes së bizneseve: Pa reforma ekonomike, Kos
+[Scraper] Sample image: https://scontent.fprn1-1.fna.fbcdn.net/v/t39.99422-6/7375435
+[Scraper] No new posts.
+[Scraper] Launching browser…
+[Scraper] Loaded 8 session cookies
+[Scraper] Loading Facebook page…
+[Scraper] Expanded 4 "See more" buttons
+[Scraper] Found 6 posts on page
+[Scraper] Sample: Skandal me doping në Kupën e Botës, tetë lojtarë të kombëtares së njohur rezultu
+[Scraper] Sample image: https://scontent.fprn1-1.fna.fbcdn.net/v/t39.99422-6/7397740
+[Scraper] No new posts.
+[Scraper] Launching browser…
+[Scraper] Loaded 8 session cookies
+[Scraper] Loading Facebook page…
+[Scraper] Expanded 4 "See more" buttons
+[Scraper] Found 6 posts on page
+[Scraper] Sample: Skandal me doping në Kupën e Botës, tetë lojtarë të kombëtares së njohur rezultu
+[Scraper] Sample image: https://scontent.fprn1-1.fna.fbcdn.net/v/t39.99422-6/7397740
+[Scraper] No new posts.
+[Scraper] Launching browser…
+[Scraper] Loaded 8 session cookies
+[Scraper] Loading Facebook page…
+[Scraper] Expanded 4 "See more" buttons
+[Scraper] Found 6 posts on page
+[Scraper] Sample: Skandal me doping në Kupën e Botës, tetë lojtarë të kombëtares së njohur rezultu
+[Scraper] Sample image: https://scontent.fprn1-1.fna.fbcdn.net/v/t39.99422-6/7397740
+[Scraper] No new posts.
+[Scraper] Launching browser…
+[Scraper] Loaded 8 session cookies
+[Scraper] Loading Facebook page…
+[Scraper] Expanded 4 "See more" buttons
+[Scraper] Found 6 posts on page
+[Scraper] Sample: Skandal me doping në Kupën e Botës, tetë lojtarë të kombëtares së njohur rezultu
+[Scraper] Sample image: https://scontent.fprn1-1.fna.fbcdn.net/v/t39.99422-6/7397740
+[Scraper] No new posts.
+[Scraper] Launching browser…
+[Scraper] Loaded 8 session cookies
+[Scraper] Loading Facebook page…
+[Scraper] Expanded 4 "See more" buttons
+[Scraper] Found 6 posts on page
+[Scraper] Sample: Skandal me doping në Kupën e Botës, tetë lojtarë të kombëtares së njohur rezultu
+[Scraper] Sample image: https://scontent.fprn1-1.fna.fbcdn.net/v/t39.99422-6/7397740
+[Scraper] No new posts.
+[Scraper] Launching browser…
+[Scraper] Loaded 8 session cookies
+[Scraper] Loading Facebook page…
+[Scraper] Expanded 4 "See more" buttons
+[Scraper] Found 6 posts on page
+[Scraper] Sample: Skandal me doping në Kupën e Botës, tetë lojtarë të kombëtares së njohur rezultu
+[Scraper] Sample image: https://scontent.fprn1-1.fna.fbcdn.net/v/t39.99422-6/7397740
+[Scraper] No new posts.
+[Scraper] Launching browser…
+[Scraper] Loaded 8 session cookies
+[Scraper] Loading Facebook page…
+[Scraper] Expanded 5 "See more" buttons
+[Scraper] Found 10 posts on page
+[Scraper] Sample: Kylian Mbappe: "Ata u përpoqën të na provokonin dhe të na nxirrnin nga loja, por
+[Scraper] Sample image: https://scontent.fprn1-1.fna.fbcdn.net/v/t39.99422-6/7375779
+[Scraper] ✅ Saved 4 new posts (8 total)
+[Scraper] Launching browser…
+[Scraper] Loaded 8 session cookies
+[Scraper] Loading Facebook page…

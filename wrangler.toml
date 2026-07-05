@@ -6,6 +6,7 @@ compatibility_flags = ["nodejs_compat"]
 [assets]
 directory = "."
 binding = "ASSETS"
+run_worker_first = true
 
 [[kv_namespaces]]
 binding = "KV"
@@ -15,5 +16,10 @@ id = "c214c0482e8043a091f472b1477598a5"
 binding = "BUCKET"
 bucket_name = "shekulli"
 
+[[routes]]
+pattern = "shekulli.info/*"
+zone_name = "shekulli.info"
+
 [triggers]
 crons = ["*/5 * * * *"]
+

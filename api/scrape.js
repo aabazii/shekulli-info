@@ -6,39 +6,53 @@ const FB_TOKEN     = process.env.FB_PAGE_TOKEN;
 const FB_APP_ID    = process.env.FB_APP_ID;
 const FB_APP_SECRET = process.env.FB_APP_SECRET;
 const VERCEL_URL = 'https://shekulli.info';
+const AUTH_ERROR_CODES = new Set([102, 104, 190, 463, 467]);
 
-// ── Token resolution — stores permanent page token in KV so it survives restarts
-// headerToken: short-lived token passed via X-FB-Token header from GitHub Actions
+async function clearTokenCache() {
+  await Promise.all([kv.del('fb_permanent_token'), kv.del('fb_longlived_token')]);
+}
+
 async function resolveToken(headerToken) {
-  // 1. Permanent page token in KV — never expires unless explicitly invalidated
   const cached = await kv.get('fb_permanent_token');
   if (cached) return cached;
 
-  // 2. Try to get a new page token using the best available user token:
-  //    a) long-lived user token stored in KV (up to 60 days)
-  //    b) short-lived token from the request header
-  //    c) env var fallback
+  const baseToken = headerToken || FB_TOKEN;
   const kvLongLived = await kv.get('fb_longlived_token');
-  const sourceToken = kvLongLived || headerToken || FB_TOKEN;
+  let sourceToken = kvLongLived || baseToken;
   if (!sourceToken) return null;
   if (!FB_APP_ID || !FB_APP_SECRET) return sourceToken;
 
   try {
-    // Exchange source → long-lived user token (no-op if already long-lived, FB handles it)
     const ltRes = await fetch(
       `https://graph.facebook.com/${GRAPH_VER}/oauth/access_token` +
       `?grant_type=fb_exchange_token&client_id=${FB_APP_ID}` +
       `&client_secret=${FB_APP_SECRET}&fb_exchange_token=${sourceToken}`
     );
     const ltData = await ltRes.json();
-    const longLivedToken = ltData.access_token || sourceToken;
 
-    // Store the long-lived token as backup (refreshes its ~60-day window each time)
-    if (ltData.access_token) {
-      await kv.set('fb_longlived_token', longLivedToken);
+    // If KV long-lived token is stale, clear it and retry with the env base token
+    if (ltData.error && kvLongLived && baseToken && baseToken !== kvLongLived) {
+      console.warn('[Token] Cached long-lived token stale, retrying with env token');
+      await kv.del('fb_longlived_token');
+      sourceToken = baseToken;
+      const retryRes = await fetch(
+        `https://graph.facebook.com/${GRAPH_VER}/oauth/access_token` +
+        `?grant_type=fb_exchange_token&client_id=${FB_APP_ID}` +
+        `&client_secret=${FB_APP_SECRET}&fb_exchange_token=${sourceToken}`
+      );
+      const retryData = await retryRes.json();
+      if (retryData.access_token) {
+        ltData.access_token = retryData.access_token;
+        ltData.error = null;
+      } else {
+        console.warn('[Token] Env token exchange also failed:', retryData.error?.message);
+        return sourceToken;
+      }
     }
 
-    // Get permanent page token via /me/accounts
+    const longLivedToken = ltData.access_token || sourceToken;
+    if (ltData.access_token) await kv.set('fb_longlived_token', longLivedToken);
+
     const acctRes = await fetch(
       `https://graph.facebook.com/${GRAPH_VER}/me/accounts?access_token=${longLivedToken}`
     );
@@ -46,11 +60,9 @@ async function resolveToken(headerToken) {
     if (!acctData.data?.length) return longLivedToken;
 
     const page = acctData.data.find(p => /shekulli/i.test(p.name)) || acctData.data[0];
-    const permanentToken = page.access_token;
-
-    await kv.set('fb_permanent_token', permanentToken);
+    await kv.set('fb_permanent_token', page.access_token);
     console.log(`🔑 Stored permanent page token for: ${page.name}`);
-    return permanentToken;
+    return page.access_token;
   } catch (e) {
     console.warn('Token exchange failed, using source token directly:', e.message);
     return sourceToken;
@@ -133,10 +145,10 @@ module.exports = async function handler(req, res) {
     return res.status(401).json({ ok: false, message: 'Unauthorized' });
   }
 
-  // ?reset=token clears the cached permanent token so next run re-exchanges
+  // ?reset=token clears all cached tokens so next run re-exchanges from scratch
   if (req.query?.reset === 'token') {
-    await kv.del('fb_permanent_token');
-    return res.json({ ok: true, message: 'Cached token cleared — will re-exchange on next scrape' });
+    await clearTokenCache();
+    return res.json({ ok: true, message: 'Cached tokens cleared (both permanent and long-lived)' });
   }
 
   try {
@@ -150,10 +162,9 @@ module.exports = async function handler(req, res) {
     try {
       fbPosts = await fetchPosts(token);
     } catch (tokenErr) {
-      // Token invalid — clear cached token so next run re-exchanges with FB_TOKEN
-      if (tokenErr.code === 190) {
-        await kv.del('fb_permanent_token');
-        console.log('⚠️  Token invalid (190) — cleared cache, will re-exchange next run');
+      if (AUTH_ERROR_CODES.has(tokenErr.code)) {
+        await clearTokenCache();
+        console.warn(`⚠️  Auth error ${tokenErr.code} — cleared token cache for self-recovery`);
       }
       throw tokenErr;
     }

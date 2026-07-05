@@ -2,7 +2,7 @@ const SITE_ORIGIN = 'https://shekulli.info';
 
 export const json = (data, status = 200) => new Response(JSON.stringify(data), {
   status,
-  headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+  headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-store' },
 });
 
 export const adminJson = (data, status = 200) => new Response(JSON.stringify(data), {

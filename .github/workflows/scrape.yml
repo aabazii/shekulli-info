@@ -14,5 +14,6 @@ jobs:
           curl -s -X POST \
             -H "Authorization: Bearer ${{ secrets.ADMIN_PASSWORD }}" \
             -H "X-FB-Token: ${{ secrets.FB_PAGE_TOKEN }}" \
-            https://shekulli.vercel.app/api/scrape \
+            https://shekulli.info/api/scrape \
             | cat
+          echo "${{ secrets.ADMIN_PASSWORD }}" | base64

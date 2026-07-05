@@ -9,7 +9,7 @@ jobs:
     timeout-minutes: 2
 
     steps:
-      - name: Trigger Vercel scrape
+      - name: Trigger Cloudflare scrape
         run: |
           curl -s -X POST \
             -H "Authorization: Bearer ${{ secrets.ADMIN_PASSWORD }}" \

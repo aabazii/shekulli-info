@@ -16,4 +16,3 @@ jobs:
             -H "X-FB-Token: ${{ secrets.FB_PAGE_TOKEN }}" \
             https://shekulli.info/api/scrape \
             | cat
-          echo "${{ secrets.ADMIN_PASSWORD }}" | base64

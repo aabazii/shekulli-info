@@ -25,3 +25,4 @@ export const isAuthed = (request, env) => {
   if (!header.startsWith('Bearer ')) return false;
   return header.slice(7) === env.ADMIN_PASSWORD;
 };
+ 

@@ -137,13 +137,26 @@ export async function handleScrape(request, env) {
 
     const raw = [];
     for (const p of fbPosts) {
+      // Accept posts that have a message OR at least an attachment (image/link/video).
+      const hasMessage = !!(p.message || '').trim();
+      const hasAttachment = (p.attachments?.data || []).length > 0 || !!p.full_picture;
+      if (!hasMessage && !hasAttachment) continue;
+
       const rawText = (p.message || '').trim();
-      if (!rawText) continue;
-      const cat      = guessCategory(rawText);
-      const fullText = clean(rawText);
+      const cat      = guessCategory(rawText || (p.attachments?.data?.[0]?.type || ''));
+      const fullText = clean(rawText || '');
       const lines    = fullText.split('\n').map(l => l.trim()).filter(Boolean);
-      const title    = (lines[0] || '').slice(0, 140).trim();
+
+      // Derive a title: prefer the first message line, otherwise synthesize one for attachment-only posts
+      let title = (lines[0] || '').slice(0, 140).trim();
+      if (!title && hasAttachment) {
+        const att = p.attachments?.data?.[0];
+        const attType = att?.type || (p.full_picture ? 'photo' : 'post');
+        const datePart = new Date(p.created_time).toISOString().slice(0, 10);
+        title = `${attType.charAt(0).toUpperCase() + attType.slice(1)} — ${datePart}`;
+      }
       if (!title) continue;
+
       const body       = lines.length > 1 ? lines.slice(1).join('\n\n') : fullText;
       const standfirst = body.slice(0, 300);
       let hasVideo = false, videoUrl = '';

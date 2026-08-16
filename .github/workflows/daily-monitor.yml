@@ -1,9 +1,12 @@
-name: Daily Scrape Health Check
+name: EU Daily Scrape Health Check (3x/day)
 
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 8 * * *' # daily at 08:00 UTC
+    # Runs at 08:00, 14:00 and 20:00 CEST (UTC+2) — cron uses UTC, so these are:
+    - cron: '0 6 * * *'  # 08:00 CEST
+    - cron: '0 12 * * *' # 14:00 CEST
+    - cron: '0 18 * * *' # 20:00 CEST
 
 jobs:
   check:

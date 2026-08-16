@@ -1,0 +1,45 @@
+name: Daily Scrape Health Check
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 8 * * *' # daily at 08:00 UTC
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Health check
+        id: health
+        continue-on-error: true
+        run: |
+          set -e
+          echo "Checking https://shekulli.info/api/articles?limit=1"
+          if ! curl -sS -f "https://shekulli.info/api/articles?limit=1" -o resp.json; then
+            echo "CURL_FAILED" > status.txt
+            exit 1
+          fi
+          node -e "const fs=require('fs');let ok=true;try{const r=JSON.parse(fs.readFileSync('resp.json','utf8')); if(!Array.isArray(r)||r.length===0) ok=false}catch(e){ok=false} if(!ok){console.error('Bad response'); process.exit(2)} console.log('ok')"
+
+      - name: Create issue on failure
+        if: steps.health.outcome != 'success'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            let resp = '';
+            try { resp = fs.readFileSync('resp.json','utf8').slice(0,2000); } catch(e) { resp = 'no response'; }
+            const title = `Daily scrape failure — ${new Date().toISOString()}`;
+            const body = `Automated check detected a problem with https://shekulli.info/api/articles\n\nResponse (truncated):\n\n\
+\
+\n${resp}\n\n\nPlease investigate.`;
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title,
+              body,
+            });
